@@ -1,494 +1,1656 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nvn Arya Blog - Insights from a Working Professional</title>
-    <!-- Load Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Center Govt. GH & RH Calendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <style>
-        /* Custom Tailwind Configuration */
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary-dark': '#111827', /* Dark Grey/Black for background */
-                        'primary-light': '#F9FAFB', /* Light Grey for cards */
-                        'accent-blue': '#1D4ED8', /* Deep Blue for accents */
-                        'accent-teal': '#14B8A6', /* Red for highlights */
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.3)',
-                    }
-                }
-            }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            letter-spacing: -0.01em;
         }
-        /* Ensure smooth scrolling when hash changes */
-        html { scroll-behavior: smooth; }
-        .page-content {
-            min-height: calc(100vh - 128px); /* Full height minus header and footer */
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+        
+        /* --- LIQUID BG --- */
+        .liquid-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+            overflow: hidden; pointer-events: none;
+            background-color: #f2f2f7; 
+            transition: background-color 0.5s ease;
         }
-        .page-content.active {
-            opacity: 1;
+        .dark .liquid-bg { background-color: #000000; } 
+        .blob {
+            position: absolute; filter: blur(80px); border-radius: 50%; opacity: 0.8;
+            animation: floatBlob 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+        .dark .blob { opacity: 0.6; filter: blur(100px); mix-blend-mode: screen; }
+        .blob1 { top: -15%; left: -10%; width: 70vw; height: 70vw; background: #ff2a85; animation-delay: 0s; }
+        .blob2 { bottom: -20%; right: -10%; width: 80vw; height: 80vw; background: #5e5ce6; animation-delay: -7s; }
+        .blob3 { top: 20%; left: 30%; width: 75vw; height: 75vw; background: #32ade6; animation-delay: -12s; }
+        .blob4 { bottom: 10%; left: -15%; width: 60vw; height: 60vw; background: #ff9f0a; animation-delay: -18s; }
+        @keyframes floatBlob {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(8%, 10%) scale(1.1) rotate(10deg); }
+            66% { transform: translate(-5%, -8%) scale(0.9) rotate(-5deg); }
+            100% { transform: translate(-10%, 15%) scale(1.05) rotate(5deg); }
+        }
+
+        /* --- GLASSMORPHISM --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(40px) saturate(220%);
+            -webkit-backdrop-filter: blur(40px) saturate(220%);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255,255,255,0.9);
+            border-radius: 28px; 
+        }
+        .dark .glass-panel {
+            background: rgba(28, 28, 30, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+        }
+        .glass-button {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(30px) saturate(200%);
+            -webkit-backdrop-filter: blur(30px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,1);
+            border-radius: 9999px; 
+        }
+        .dark .glass-button {
+            background: rgba(44, 44, 46, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.05);
+        }
+
+        /* --- CALENDAR GRID --- */
+        .date-cell { 
+            min-height: 3.8rem;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
+            padding-top: 6px; border-radius: 12px; position: relative; border: 1px solid transparent; 
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); 
+        }
+        .date-cell * { pointer-events: none; }
+        .holiday-gh { background-color: rgba(255, 59, 48, 0.08); color: #d70015; border-color: rgba(255, 59, 48, 0.15); cursor: pointer; }
+        .holiday-rh { background-color: rgba(0, 122, 255, 0.08); color: #0056b3; border-color: rgba(0, 122, 255, 0.15); cursor: pointer; }
+        .sat-sun { color: #ff9500; font-weight: 800; cursor: pointer; }
+        .regular-day { background-color: transparent; cursor: pointer; }
+        .dark .holiday-gh { background-color: rgba(255, 69, 58, 0.15); color: #ff6961; border-color: rgba(255, 69, 58, 0.2); }
+        .dark .holiday-rh { background-color: rgba(10, 132, 255, 0.15); color: #64d2ff; border-color: rgba(10, 132, 255, 0.2); }
+        .dark .sat-sun { color: #ff9f0a; }
+        .dark .regular-day { color: #ffffff; opacity: 0.9; }
+        .date-cell:hover { z-index: 20; transform: scale(1.08); background-color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,1); box-shadow: 0 8px 25px -8px rgba(0,0,0,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .dark .date-cell:hover { background-color: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); box-shadow: 0 8px 25px -8px rgba(0,0,0,0.5); }
+        .today-highlight {
+            background: linear-gradient(135deg, #ff2a85, #ff375f) !important;
+            color: white !important;
+            box-shadow: 0 6px 20px rgba(255,42,133,0.4), inset 0 1px 1px rgba(255,255,255,0.4);
+            font-weight: 900;
+            transform: scale(1.07);
+            z-index: 15;
+            border: none !important;
+            border-radius: 12px;
+        }
+        .today-highlight .holiday-label { color: rgba(255,255,255,0.95); }
+        .holiday-label { 
+            font-size: 0.5rem; line-height: 0.65rem; text-align: center; 
+            margin-top: 3px; padding: 0 2px; word-break: break-word; 
+            font-weight: 800; text-transform: uppercase; 
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; letter-spacing: 0.02em; 
+        }
+        @media (min-width: 768px) {
+            .date-cell { min-height: 6rem; padding-top: 10px; border-radius: 16px; }
+            .holiday-label { font-size: 0.65rem; line-height: 0.8rem; margin-top: 6px; padding: 0 6px; }
+            .today-highlight { border-radius: 16px; }
+            .glass-panel { border-radius: 40px; }
+        }
+        .special-day-glow {
+            box-shadow: 0 0 60px 20px rgba(255,42,133,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            animation: pulse-apple 4s infinite ease-in-out;
+        }
+        .dark .special-day-glow { border: 1px solid rgba(255,42,133,0.6) !important; }
+        @keyframes pulse-apple {
+            0% { box-shadow: 0 0 0 0 rgba(255,42,133,0.3); }
+            50% { box-shadow: 0 0 40px 20px rgba(255,42,133,0.1); }
+            100% { box-shadow: 0 0 0 0 rgba(255,42,133,0); }
+        }
+
+        /* --- SMOOTH CALENDAR ANIMATIONS --- */
+        @keyframes slideInRight {
+            0% { opacity: 0; transform: translateX(50px) scale(0.97); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes slideInLeft {
+            0% { opacity: 0; transform: translateX(-50px) scale(0.97); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.96); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        /* Special Today Jump Animation */
+        @keyframes todayBounce {
+            0%   { opacity: 0; transform: scale(0.75) translateY(30px); }
+            55%  { opacity: 1; transform: scale(1.04) translateY(-8px); }
+            75%  { transform: scale(0.98) translateY(3px); }
+            90%  { transform: scale(1.02) translateY(-2px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        /* Nav arrow press animation */
+        @keyframes navPulse {
+            0%   { transform: scale(1); }
+            40%  { transform: scale(0.88); }
+            70%  { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        .slide-in-right { animation: slideInRight 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .slide-in-left  { animation: slideInLeft  0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .fade-in        { animation: fadeInScale  0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .today-jump     { animation: todayBounce  0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .nav-press      { animation: navPulse     0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        /* Today button glow pulse */
+        @keyframes todayBtnPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(255,42,133,0); }
+            50%     { box-shadow: 0 0 20px 6px rgba(255,42,133,0.25); }
+        }
+        .today-btn-glow { animation: todayBtnPulse 2s ease-in-out infinite; }
+
+        #expanded-image-container.active { display: flex; animation: zoomIn 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        select { 
+            -webkit-appearance: none; -moz-appearance: none; appearance: none; 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.4rem center;
+            padding-right: 1.2rem !important;
+        }
+        @media (min-width: 768px) {
+            select { background-position: right 0.6rem center; padding-right: 1.8rem !important; }
+        }
+
+        /* Settings toggle switch */
+        .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; }
+        .toggle-switch input { opacity:0; width:0; height:0; }
+        .toggle-slider {
+            position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+            background:rgba(120,120,128,0.3); border-radius:24px;
+            transition: 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .toggle-slider:before {
+            position:absolute; content:""; height:18px; width:18px;
+            left:3px; bottom:3px; background:white;
+            border-radius:50%; transition: 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        input:checked + .toggle-slider { background: linear-gradient(135deg,#ff2a85,#5e5ce6); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* Settings section label */
+        .settings-section-label {
+            font-size: 0.6rem; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.12em; color: #8e8e93; margin: 12px 4px 6px; padding: 0;
+        }
+        .dark .settings-section-label { color: #636366; }
+
+        /* Theme pill buttons */
+        .theme-pill {
+            flex:1; padding: 8px 4px; border-radius: 12px; font-size: 0.65rem;
+            font-weight: 800; text-align: center; cursor: pointer; transition: all 0.25s;
+            border: 1.5px solid transparent;
+        }
+        .theme-pill.active {
+            background: linear-gradient(135deg,#ff2a85,#5e5ce6);
+            color: white; border-color: transparent;
+            box-shadow: 0 4px 12px rgba(255,42,133,0.3);
+        }
+        .theme-pill:not(.active) {
+            background: rgba(255,255,255,0.5);
+            color: #6e6e73;
+            border-color: rgba(255,255,255,0.7);
+        }
+        .dark .theme-pill:not(.active) {
+            background: rgba(44,44,46,0.6);
+            color: #aeaeb2;
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        /* GH RH Logo Badge */
+        .ghrh-logo {
+            display: flex; align-items: center; gap: 3px;
+        }
+        .ghrh-logo .badge-gh {
+            background: linear-gradient(135deg,#ff3b30,#d70015);
+            color: white; font-weight: 900; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 3px 10px rgba(255,59,48,0.35);
+            letter-spacing: -0.02em;
+        }
+        .ghrh-logo .badge-rh {
+            background: linear-gradient(135deg,#0a84ff,#0056b3);
+            color: white; font-weight: 900; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 3px 10px rgba(10,132,255,0.35);
+            letter-spacing: -0.02em;
+        }
+        .ghrh-logo .badge-amp {
+            color: #8e8e93; font-weight: 900; font-size: 0.65rem;
+        }
+        /* Compact calendar mode */
+        .compact-mode .date-cell { min-height: 2.6rem !important; padding-top: 4px !important; }
+        .compact-mode .date-cell .holiday-label { display: none !important; }
+        @media (min-width: 768px) {
+            .compact-mode .date-cell { min-height: 3.5rem !important; }
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800">
+<body class="text-slate-900 dark:text-slate-100 p-3 md:p-8 transition-colors duration-500 min-h-screen relative font-sans antialiased selection:bg-pink-500 selection:text-white overflow-x-hidden">
+    
+    <!-- Liquid Background -->
+    <div class="liquid-bg">
+        <div class="blob blob1"></div>
+        <div class="blob blob2"></div>
+        <div class="blob blob3"></div>
+        <div class="blob blob4"></div>
+    </div>
 
-    <!-- Header and Navigation (Fixed) -->
-    <header class="sticky top-0 z-50 bg-primary-dark shadow-lg">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-            <!-- Logo/Title -->
-            <a href="#home" onclick="navigate('home')" class="text-2xl font-extrabold text-white tracking-tight hover:text-accent-teal transition duration-300 rounded-lg p-2">
-                NVN ARYA <span class="text-accent-blue">BLOG</span>
-            </a>
+    <!-- ===== HAMBURGER BUTTON ===== -->
+    <button id="hamburger-btn" onclick="toggleSideMenu()" class="fixed top-4 left-4 z-50 p-3 rounded-full glass-button text-slate-800 dark:text-white hover:scale-105 transition-all cursor-pointer backdrop-blur-3xl shadow-md" aria-label="Open Menu">
+        <svg id="hamburger-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
 
-            <!-- Desktop Navigation -->
-            <nav class="hidden md:flex space-x-6">
-                <a href="#home" onclick="navigate('home')" class="text-white hover:text-accent-teal font-semibold px-3 py-2 rounded-lg transition duration-300">Home</a>
-                <a href="#about" onclick="navigate('about')" class="text-white hover:text-accent-teal font-semibold px-3 py-2 rounded-lg transition duration-300">About Me</a>
-                <a href="#contact" onclick="navigate('contact')" class="text-white hover:text-accent-teal font-semibold px-3 py-2 rounded-lg transition duration-300">Contact</a>
-            </nav>
+    <!-- ===== SIDE OVERLAY ===== -->
+    <div id="side-menu-overlay" onclick="closeSideMenu()" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[55] hidden transition-opacity duration-300 opacity-0"></div>
 
-            <!-- Mobile Menu Button (Hamburger) -->
-            <button id="mobile-menu-button" class="md:hidden text-white focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    <!-- ===== SIDE DRAWER ===== -->
+    <div id="side-drawer" class="fixed top-0 left-0 h-full w-72 z-[60] transform -translate-x-full transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]"
+         style="background: rgba(255,255,255,0.72); backdrop-filter: blur(50px) saturate(220%); -webkit-backdrop-filter: blur(50px) saturate(220%); border-right: 1px solid rgba(255,255,255,0.8); box-shadow: 20px 0 60px -10px rgba(0,0,0,0.15);">
+        
+        <!-- Drawer Header -->
+        <div class="flex items-center justify-between px-5 pt-14 pb-5 border-b border-white/40 dark:border-white/10">
+            <div class="flex items-center gap-3">
+                <!-- GH & RH Logo in Drawer -->
+                <div class="ghrh-logo">
+                    <div class="badge-gh w-8 h-8 text-[9px]">GH</div>
+                    <div class="badge-amp">&amp;</div>
+                    <div class="badge-rh w-8 h-8 text-[9px]">RH</div>
+                </div>
+                <div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white tracking-tight">BIS Portal</div>
+                    <div class="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Quick Links</div>
+                </div>
+            </div>
+            <button onclick="closeSideMenu()" class="p-2 rounded-full bg-white/50 dark:bg-white/10 hover:bg-white/80 dark:hover:bg-white/20 border border-white/60 dark:border-white/15 shadow-sm transition-all hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-700 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
             </button>
         </div>
 
-        <!-- Mobile Menu (Dropdown) -->
-        <div id="mobile-menu" class="hidden md:hidden bg-gray-900 border-t border-gray-700">
-            <a href="#home" onclick="navigate('home'); toggleMobileMenu()" class="block text-white hover:bg-gray-700 px-4 py-3 font-medium">Home</a>
-            <a href="#about" onclick="navigate('about'); toggleMobileMenu()" class="block text-white hover:bg-gray-700 px-4 py-3 font-medium">About Me</a>
-            <a href="#contact" onclick="navigate('contact'); toggleMobileMenu()" class="block text-white hover:bg-gray-700 px-4 py-3 font-medium">Contact</a>
-        </div>
-    </header>
+        <!-- Nav Links + Settings (Scrollable) -->
+        <nav class="px-4 py-4 flex flex-col gap-1.5 overflow-y-auto overscroll-contain" style="max-height: calc(100vh - 130px);">
+            
+            <!-- Home -->
+            <a href="https://www.bis.gov.in" target="_blank" class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/15 border border-white/60 dark:border-white/10 shadow-sm transition-all hover:scale-[1.02]">
+                <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#34c759] to-[#30b852] shadow-md flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9.75L12 3l9 6.75V21a1 1 0 01-1 1H4a1 1 0 01-1-1V9.75z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 22V12h6v10" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white">Home</div>
+                    <div class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 truncate">BIS Services Portal</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 ml-auto opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
+            <!-- BISLEA -->
+            <a href="https://nvnarya45.github.io/carrot/" target="_blank" class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/15 border border-white/60 dark:border-white/10 shadow-sm transition-all hover:scale-[1.02]">
+                <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#5e5ce6] to-[#4b49c8] shadow-md flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white">BISLEA</div>
+                    <div class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 truncate">BIS Employee Association</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 ml-auto opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
+            <!-- BIS Circular -->
+            <a href="https://www.services.bis.gov.in/php/BIS_2.0/login" target="_blank" class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/15 border border-white/60 dark:border-white/10 shadow-sm transition-all hover:scale-[1.02]">
+                <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#32ade6] to-[#0a84ff] shadow-md flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white">BIS Circular</div>
+                    <div class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 truncate">Official Circulars</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 ml-auto opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
+            <!-- HFMS -->
+            <a href="https://iconnect.manakonline.in/" target="_blank" class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/15 border border-white/60 dark:border-white/10 shadow-sm transition-all hover:scale-[1.02]">
+                <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#ff9f0a] to-[#ff6b00] shadow-md flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white">HFMS</div>
+                    <div class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 truncate">BIS Finance Management</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 ml-auto opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
+            <!-- BIS Salary -->
+            <a href="http://164.100.105.198:8076/BIS/myaccount/Login.do?module=MYACCOUNT" target="_blank" class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/15 border border-white/60 dark:border-white/10 shadow-sm transition-all hover:scale-[1.02]">
+                <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#ff2a85] to-[#c9184a] shadow-md flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white">BIS Salary</div>
+                    <div class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 truncate">Salary Management</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 ml-auto opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
 
-    <!-- Main Content Area -->
-    <main id="app" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8"></main>
+            <div class="my-1 border-t border-white/40 dark:border-white/10"></div>
 
-    <!-- Footer -->
-    <footer class="bg-primary-dark mt-12">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-white text-center">
-            <p>&copy; <span id="current-year"></span> Navin Arya Blog. All rights reserved.</p>
-            <div class="mt-2 text-sm text-gray-400">
-                <span class="mr-4">Location: Jaipur</span> |
-                <span class="mx-4">Mobile: 9928294545</span> |
-                <span class="ml-4">Email: navinarya.786@gmail.com</span>
+            <!-- About -->
+            <button onclick="openAboutSection()" class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/15 border border-white/60 dark:border-white/10 shadow-sm transition-all hover:scale-[1.02] w-full text-left">
+                <span class="w-9 h-9 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#64d2ff] to-[#5e5ce6] shadow-md flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white">About</div>
+                    <div class="text-[9px] font-semibold text-slate-400 dark:text-slate-500">App Info &amp; Version</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 ml-auto opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+
+            <div class="my-1 border-t border-white/40 dark:border-white/10"></div>
+
+            <!-- ===== SETTINGS SECTION ===== -->
+            <div class="px-1">
+                <p class="settings-section-label">⚙️ Settings</p>
             </div>
-            <p class="text-xs mt-1 text-gray-500">Working Professional's Insights & Analysis</p>
+
+            <!-- THEME -->
+            <div class="px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-br from-[#5e5ce6] to-[#0a84ff] shadow-sm flex-shrink-0">
+                        <svg class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    </span>
+                    <span class="text-xs font-black text-slate-800 dark:text-white">Theme</span>
+                </div>
+                <div class="flex gap-1.5" id="theme-pills">
+                    <div class="theme-pill" id="pill-system" onclick="setTheme('system')">System</div>
+                    <div class="theme-pill" id="pill-light"  onclick="setTheme('light')">☀️ Light</div>
+                    <div class="theme-pill" id="pill-dark"   onclick="setTheme('dark')">🌙 Dark</div>
+                </div>
+            </div>
+
+            <!-- CALENDAR TYPE -->
+            <div class="px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-br from-[#ff9f0a] to-[#ff3b30] shadow-sm flex-shrink-0">
+                        <svg class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </span>
+                    <span class="text-xs font-black text-slate-800 dark:text-white">Calendar Type</span>
+                </div>
+                <div class="flex gap-1.5" id="caltype-pills">
+                    <div class="theme-pill" id="pill-regular" onclick="setCalType('regular')">📅 Regular</div>
+                    <div class="theme-pill" id="pill-compact" onclick="setCalType('compact')">⚡ Compact</div>
+                </div>
+            </div>
+
+            <!-- WEEK START -->
+            <div class="px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-br from-[#34c759] to-[#32ade6] shadow-sm flex-shrink-0">
+                            <svg class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div>
+                            <div class="text-xs font-black text-slate-800 dark:text-white">Week Starts</div>
+                            <div class="text-[9px] font-semibold text-slate-400" id="week-start-label">Monday</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="week-start-toggle" onchange="toggleWeekStart()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <p class="text-[8px] text-slate-400 mt-1.5 font-semibold">Toggle: Mon → Sun</p>
+            </div>
+
+            <!-- SHOW PANCHANG -->
+            <div class="px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-br from-[#ff2a85] to-[#ff9f0a] shadow-sm flex-shrink-0 text-sm">🪐</span>
+                        <div>
+                            <div class="text-xs font-black text-slate-800 dark:text-white">Panchang</div>
+                            <div class="text-[9px] font-semibold text-slate-400">Show Astro Data</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="panchang-toggle" checked onchange="togglePanchang()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ANIMATIONS -->
+            <div class="px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-br from-[#64d2ff] to-[#5e5ce6] shadow-sm flex-shrink-0 text-sm">✨</span>
+                        <div>
+                            <div class="text-xs font-black text-slate-800 dark:text-white">Animations</div>
+                            <div class="text-[9px] font-semibold text-slate-400">Smooth transitions</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="animation-toggle" checked onchange="toggleAnimations()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- SHOW WEEKENDS HIGHLIGHT -->
+            <div class="px-4 py-3.5 rounded-2xl bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-br from-[#ff9f0a] to-[#ff6b00] shadow-sm flex-shrink-0 text-sm">🏖️</span>
+                        <div>
+                            <div class="text-xs font-black text-slate-800 dark:text-white">Weekend Highlight</div>
+                            <div class="text-[9px] font-semibold text-slate-400">Color Sat &amp; Sun</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="weekend-toggle" checked onchange="toggleWeekendHighlight()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+        </nav>
+
+        <!-- Drawer Footer -->
+        <div class="absolute bottom-0 left-0 right-0 px-5 py-4 border-t border-white/30 dark:border-white/10 text-center bg-white/20 dark:bg-black/10 backdrop-blur-md">
+            <p class="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest">Bureau of Indian Standards</p>
+            <p class="text-[8px] text-slate-300 dark:text-slate-600 mt-0.5">© 2026 · v2.1.0</p>
         </div>
-    </footer>
+    </div>
 
-    <!-- JavaScript for SPA Logic and Content -->
+    <!-- ===== ABOUT MODAL ===== -->
+    <div id="about-modal-backdrop" onclick="closeAboutSection()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-2xl hidden z-[65] transition-opacity duration-500 opacity-0"></div>
+    <div id="about-modal" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm glass-panel z-[70] hidden transition-all duration-500 p-6 md:p-8 flex flex-col items-center text-center border border-white/60 dark:border-white/20 opacity-0 scale-95 overscroll-contain" style="border-radius:2rem;">
+        <button onclick="closeAboutSection()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-white/40 dark:bg-black/20 rounded-full p-2 border border-white/50 shadow-sm backdrop-blur-xl transition-all hover:scale-105">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+
+        <!-- GH & RH Large Logo in About -->
+        <div class="flex items-center gap-2 mb-5">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#ff3b30] to-[#d70015] flex items-center justify-center shadow-xl shadow-red-400/30">
+                <span class="text-white font-black text-lg tracking-tight">GH</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="text-slate-400 font-black text-xl">&amp;</span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0a84ff] to-[#0056b3] flex items-center justify-center shadow-xl shadow-blue-400/30">
+                <span class="text-white font-black text-lg tracking-tight">RH</span>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">BIS Calendar</h2>
+        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-1 mb-5">Bureau of Indian Standards</p>
+
+        <div class="w-full flex flex-col gap-2.5 text-left mb-5">
+            <div class="flex items-start gap-3 bg-white/50 dark:bg-white/5 px-4 py-3 rounded-xl border border-white/60 dark:border-white/10">
+                <span class="text-lg">📅</span>
+                <div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">What is this?</div>
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">An interactive holiday calendar for BIS employees — view Gazetted &amp; Restricted holidays, add personal notes, and access key BIS portals.</div>
+                </div>
+            </div>
+            <div class="flex items-start gap-3 bg-white/50 dark:bg-white/5 px-4 py-3 rounded-xl border border-white/60 dark:border-white/10">
+                <span class="text-lg">🚀</span>
+                <div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Features</div>
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">Live Panchang · Firebase notes · Auto Dark Mode · Settings · Admin editor · Swipe navigation</div>
+                </div>
+            </div>
+            <div class="flex items-start gap-3 bg-white/50 dark:bg-white/5 px-4 py-3 rounded-xl border border-white/60 dark:border-white/10">
+                <span class="text-lg">👨‍💻</span>
+                <div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Designed by</div>
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">Nvn Arya · BIS Employee</div>
+                </div>
+            </div>
+            <div class="flex items-start gap-3 bg-white/50 dark:bg-white/5 px-4 py-3 rounded-xl border border-white/60 dark:border-white/10">
+                <span class="text-lg">🔖</span>
+                <div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Version</div>
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">v2.1.0 · 2026 · Built with ❤️ for BIS</div>
+                </div>
+            </div>
+        </div>
+        <a href="https://www.instagram.com/i_am_nvi?igsh=ZHdha2UxYWNyNjhy" target="_blank" class="flex items-center justify-center gap-2 w-full px-5 py-3 bg-gradient-to-r from-[#ff2a85] to-[#5e5ce6] text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            Follow Creator on Instagram
+        </a>
+    </div>
+
+    <!-- Dark Mode Toggle (Top Right) -->
+    <button onclick="toggleDarkModeManual()" class="fixed top-4 right-4 z-50 p-3 rounded-full glass-button text-slate-800 dark:text-white hover:scale-105 transition-all cursor-pointer backdrop-blur-3xl shadow-md">
+        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 hidden dark:block drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 block dark:hidden drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+    </button>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="max-w-4xl mx-auto relative z-10 pt-2 md:pt-4">
+        <!-- Header -->
+        <header class="text-center mb-8 md:mb-12 flex flex-col items-center">
+            <!-- GH & RH Main Logo -->
+            <div class="glass-button rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-4 mb-4 inline-flex items-center gap-2 shadow-lg">
+                <div class="ghrh-logo">
+                    <div class="badge-gh text-[11px] md:text-sm" style="width:36px;height:36px; border-radius:10px;">GH</div>
+                    <div class="badge-amp text-sm md:text-base">&amp;</div>
+                    <div class="badge-rh text-[11px] md:text-sm" style="width:36px;height:36px; border-radius:10px;">RH</div>
+                </div>
+            </div>
+            <h1 class="text-3xl md:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 drop-shadow-sm">Calendar</h1>
+            <p class="text-slate-600 dark:text-slate-300 font-semibold tracking-widest uppercase text-[10px] md:text-sm mt-1.5 opacity-80">Bureau of Indian Standards</p>
+            
+            <div class="flex flex-wrap justify-center gap-2 md:gap-5 mt-6 text-[9px] md:text-xs font-bold uppercase tracking-widest">
+                <span class="flex items-center gap-1.5 glass-button px-3.5 py-2 md:px-5 md:py-2.5 transition-colors">
+                    <span class="w-2 h-2 md:w-3 md:h-3 bg-[#ff9f0a] rounded-full shadow-inner"></span> Weekends
+                </span>
+                <button onclick="openHolidayListModal('GH')" class="flex items-center gap-1.5 glass-button px-3.5 py-2 md:px-5 md:py-2.5 transition-all hover:scale-105 hover:shadow-md cursor-pointer border-[#ff3b30]/30 hover:border-[#ff3b30]/60">
+                    <span class="w-2 h-2 md:w-3 md:h-3 bg-[#ff3b30] rounded-full shadow-inner"></span> GH
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 md:h-3 md:w-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>
+                <button onclick="openHolidayListModal('RH')" class="flex items-center gap-1.5 glass-button px-3.5 py-2 md:px-5 md:py-2.5 transition-all hover:scale-105 hover:shadow-md cursor-pointer border-[#32ade6]/30 hover:border-[#32ade6]/60">
+                    <span class="w-2 h-2 md:w-3 md:h-3 bg-[#32ade6] rounded-full shadow-inner"></span> RH
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 md:h-3 md:w-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Calendar -->
+        <div class="glass-panel overflow-hidden mx-1 md:mx-0">
+            <!-- Month Nav -->
+            <div class="flex items-center justify-between p-3.5 md:p-8 border-b border-white/40 dark:border-white/10 relative z-20 bg-white/20 dark:bg-white/5">
+                <button id="prev-btn" onclick="prevMonthAnim(this)" class="p-2.5 md:p-3 bg-white/40 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-white/10 rounded-xl md:rounded-full transition-all focus:outline-none backdrop-blur-md shadow-sm border border-white/50 dark:border-white/10 active:scale-90">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-slate-800 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                
+                <div class="flex items-center gap-1 md:gap-3">
+                    <select id="month-picker" onchange="jumpToDate()" class="bg-transparent hover:bg-white/40 dark:hover:bg-white/10 rounded-xl px-1.5 py-1 md:px-3 md:py-1.5 text-lg md:text-3xl font-black text-slate-900 dark:text-white outline-none cursor-pointer transition-colors text-center drop-shadow-sm">
+                        <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+                        <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+                        <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+                        <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+                    </select>
+                    <select id="year-picker" onchange="jumpToDate()" class="bg-transparent hover:bg-white/40 dark:hover:bg-white/10 rounded-xl px-1.5 py-1 md:px-3 md:py-1.5 text-lg md:text-3xl font-black text-slate-500 dark:text-slate-400 outline-none cursor-pointer transition-colors text-center drop-shadow-sm">
+                        <!-- populated by JS -->
+                    </select>
+                </div>
+                
+                <button id="next-btn" onclick="nextMonthAnim(this)" class="p-2.5 md:p-3 bg-white/40 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-white/10 rounded-xl md:rounded-full transition-all focus:outline-none backdrop-blur-md shadow-sm border border-white/50 dark:border-white/10 active:scale-90">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 text-slate-800 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendar-swipe-zone" class="p-3 md:p-8 relative z-10 touch-pan-y">
+                <div id="day-headers" class="grid grid-cols-7 text-center text-[0.6rem] md:text-sm font-bold text-slate-500 dark:text-slate-400 mb-3 md:mb-6 uppercase tracking-widest opacity-90">
+                    <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div class="text-[#ff9f0a]">Sat</div><div class="text-[#ff9f0a]">Sun</div>
+                </div>
+                <div id="days-grid" class="grid grid-cols-7 gap-1.5 md:gap-4 text-center"></div>
+            </div>
+        </div>
+
+        <!-- Jump to Today Button -->
+        <div class="mt-8 md:mt-10 flex justify-center">
+            <button id="today-btn" onclick="goToTodayAnim(this)" class="glass-button today-btn-glow px-6 py-3 md:px-8 md:py-4 bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-white/20 text-slate-900 dark:text-white rounded-full font-black text-xs md:text-sm hover:scale-105 transition-all flex items-center gap-2 shadow-lg backdrop-blur-2xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Jump to Today
+            </button>
+        </div>
+
+        <footer class="mt-14 md:mt-20 mb-8 text-center pt-6 md:pt-8">
+            <p class="text-slate-500 dark:text-slate-400 font-semibold text-xs md:text-sm glass-button inline-block px-5 py-2 md:px-6 md:py-2.5 shadow-sm">
+                Designed by <span onclick="openProfileModal()" class="text-slate-900 dark:text-white hover:text-[#ff2a85] transition-colors cursor-pointer font-black ml-1">Nvn Arya</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Modal Backdrop -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-2xl hidden z-[60] transition-opacity duration-500"></div>
+
+    <!-- Day Detail Modal -->
+    <div id="modal-content" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[94%] max-w-md glass-panel rounded-[2rem] md:rounded-[2.5rem] shadow-[0_40px_80px_rgba(0,0,0,0.4)] z-[70] hidden transition-all duration-500 p-0 overflow-hidden border border-white/60 dark:border-white/20">
+        <div id="modal-header" class="p-6 md:p-8 text-slate-900 dark:text-white transition-colors duration-300 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent dark:from-white/10 dark:to-transparent pointer-events-none"></div>
+            <div class="flex justify-between items-start relative z-10">
+                <div>
+                    <span id="modal-type" class="inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest glass-button border-none mb-2 md:mb-3 shadow-sm"></span>
+                    <h2 id="modal-title" class="text-2xl md:text-3xl font-black leading-tight tracking-tight drop-shadow-sm"></h2>
+                </div>
+                <button onclick="closeModal()" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/40 dark:bg-black/20 hover:bg-white/60 rounded-full p-2 transition-transform hover:scale-105 border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="flex items-center gap-1.5 md:gap-2 mt-4 md:mt-5 text-slate-800 dark:text-slate-100 font-bold bg-white/40 dark:bg-black/20 inline-flex px-3 py-1.5 md:px-4 md:py-2 rounded-xl border border-white/40 dark:border-white/10 shadow-sm relative z-10 backdrop-blur-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span id="modal-date" class="text-xs md:text-sm"></span>
+            </div>
+        </div>
+        
+        <div id="modal-body-scroll" class="p-5 md:p-8 max-h-[65vh] overflow-y-auto bg-white/30 dark:bg-black/20 backdrop-blur-md overscroll-contain">
+            <div id="holiday-section" class="mb-5 md:mb-7 hidden bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-white/50 dark:border-white/10 shadow-sm">
+                <h3 class="text-[9px] md:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 md:mb-2">Event Details</h3>
+                <p id="modal-desc" class="text-slate-900 dark:text-slate-100 leading-relaxed text-xs md:text-sm font-semibold"></p>
+            </div>
+
+            <!-- Panchang Section -->
+            <div id="internet-data-section" class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-white/50 dark:border-white/10 shadow-sm mb-5 md:mb-7">
+                <h3 class="text-[9px] md:text-[10px] font-black text-[#5e5ce6] uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                    Live Astro &amp; Panchang
+                </h3>
+                <div id="loading-internet" class="text-[10px] md:text-xs font-bold text-slate-500 animate-pulse text-center py-4 md:py-5">Connecting to satellite...</div>
+                <div id="internet-results" class="hidden grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm">
+                    <div class="bg-white/50 dark:bg-black/30 p-2.5 md:p-4 rounded-xl md:rounded-2xl text-center shadow-inner">
+                        <div class="text-slate-500 dark:text-slate-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest mb-1">Sunrise</div>
+                        <div id="api-sunrise" class="font-black text-slate-900 dark:text-white">--</div>
+                    </div>
+                    <div class="bg-white/50 dark:bg-black/30 p-2.5 md:p-4 rounded-xl md:rounded-2xl text-center shadow-inner">
+                        <div class="text-slate-500 dark:text-slate-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest mb-1">Sunset</div>
+                        <div id="api-sunset" class="font-black text-slate-900 dark:text-white">--</div>
+                    </div>
+                    <div class="bg-white/50 dark:bg-black/30 p-2.5 md:p-4 rounded-xl md:rounded-2xl text-center shadow-inner">
+                        <div class="text-[#ff9f0a] text-[8px] md:text-[9px] font-black uppercase tracking-widest mb-1">Tithi</div>
+                        <div id="api-tithi" class="font-bold text-slate-900 dark:text-white text-[10px] md:text-xs">--</div>
+                    </div>
+                    <div class="bg-white/50 dark:bg-black/30 p-2.5 md:p-4 rounded-xl md:rounded-2xl text-center shadow-inner">
+                        <div class="text-[#ff9f0a] text-[8px] md:text-[9px] font-black uppercase tracking-widest mb-1">Paksha</div>
+                        <div id="api-paksha" class="font-bold text-slate-900 dark:text-white text-[10px] md:text-xs">--</div>
+                    </div>
+                    <div class="bg-white/50 dark:bg-black/30 p-2.5 md:p-4 rounded-xl md:rounded-2xl text-center shadow-inner">
+                        <div class="text-[#ff9f0a] text-[8px] md:text-[9px] font-black uppercase tracking-widest mb-1">Sun Sign</div>
+                        <div id="api-sunsign" class="font-bold text-slate-900 dark:text-white text-[10px] md:text-xs">--</div>
+                    </div>
+                    <div class="bg-white/50 dark:bg-black/30 p-2.5 md:p-4 rounded-xl md:rounded-2xl text-center shadow-inner">
+                        <div class="text-[#ff9f0a] text-[8px] md:text-[9px] font-black uppercase tracking-widest mb-1">Moon Sign</div>
+                        <div id="api-moonsign" class="font-bold text-slate-900 dark:text-white text-[10px] md:text-xs">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-white/50 dark:border-white/10 shadow-sm">
+                <h3 class="text-[9px] md:text-[10px] font-black text-[#ff2a85] dark:text-[#ff375f] uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Notes <span class="bg-black/10 dark:bg-white/10 px-2 py-0.5 rounded-full ml-auto text-slate-600 dark:text-slate-300">Public</span>
+                </h3>
+                <textarea id="modal-note-input" class="w-full bg-white/60 dark:bg-black/40 border border-white/50 dark:border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 text-xs md:text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#ff2a85]/50 transition-all resize-none shadow-inner font-semibold placeholder:text-slate-400" rows="3" placeholder="Add a public note..."></textarea>
+                <div id="error-box" class="hidden mt-2 p-2.5 bg-red-100/80 dark:bg-red-900/50 backdrop-blur-md text-[#d70015] dark:text-[#ff6961] text-[10px] md:text-xs font-bold rounded-xl shadow-sm"></div>
+                <div class="flex items-center justify-between gap-3 mt-3 md:mt-4">
+                    <button id="save-note-btn" onclick="saveFirebaseNote()" class="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 text-[10px] md:text-xs font-black py-2.5 px-5 md:py-3.5 md:px-6 rounded-full shadow-md transition-transform hover:scale-105">Save Note</button>
+                    <span id="note-save-status" class="text-[10px] md:text-xs font-black text-[#34c759] hidden flex items-center gap-1.5 bg-white/60 dark:bg-black/40 px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-sm border border-white/50 dark:border-white/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                        Saved
+                    </span>
+                </div>
+            </div>
+
+            <!-- Admin Editor -->
+            <div id="admin-holiday-editor" class="mt-5 md:mt-7 p-4 md:p-5 bg-[#ff3b30]/10 dark:bg-[#ff3b30]/20 border border-[#ff3b30]/30 rounded-2xl md:rounded-[1.5rem] hidden backdrop-blur-xl">
+                <h3 class="text-[9px] md:text-[10px] font-black text-[#d70015] dark:text-[#ff6961] uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-1.5 md:gap-2">👑 Admin Event Editor</h3>
+                <div class="flex flex-col gap-2.5 md:gap-3">
+                    <select id="edit-hol-type" class="w-full bg-white/80 dark:bg-black/40 rounded-xl p-2.5 md:p-3.5 text-xs md:text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#ff3b30] font-bold shadow-inner cursor-pointer border border-white/50 dark:border-white/10">
+                        <option value="NONE">📅 Regular Working Day</option>
+                        <option value="GH">🔴 Gazetted Holiday (GH)</option>
+                        <option value="RH">🔵 Restricted Holiday (RH)</option>
+                    </select>
+                    <input type="text" id="edit-hol-name" placeholder="Event Name" class="w-full bg-white/80 dark:bg-black/40 rounded-xl p-2.5 md:p-3.5 text-xs md:text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#ff3b30] font-bold shadow-inner placeholder:text-slate-500 border border-white/50 dark:border-white/10">
+                    <input type="text" id="edit-hol-desc" placeholder="Event Description..." class="w-full bg-white/80 dark:bg-black/40 rounded-xl p-2.5 md:p-3.5 text-xs md:text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#ff3b30] font-medium shadow-inner placeholder:text-slate-500 border border-white/50 dark:border-white/10">
+                    <div class="flex items-center justify-between gap-3 pt-2">
+                        <button onclick="saveHolidayData()" class="bg-[#ff3b30] hover:bg-[#d70015] text-white text-[10px] md:text-xs font-black py-2.5 px-5 md:py-3.5 md:px-6 rounded-full shadow-md transition-transform hover:scale-105">Update Event</button>
+                        <span id="hol-save-status" class="text-[10px] md:text-xs font-black text-[#34c759] hidden bg-white/60 dark:bg-black/40 border border-white/50 dark:border-white/10 px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-sm">Updated</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] max-w-sm glass-panel rounded-[2rem] md:rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] z-[70] hidden transition-all duration-500 p-6 md:p-8 flex flex-col items-center text-center border border-white/60 dark:border-white/20">
+        <button onclick="closeModal()" class="absolute top-4 right-4 md:top-6 md:right-6 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors bg-white/40 dark:bg-black/20 hover:bg-white/60 rounded-full p-2 border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div onclick="expandImage('https://image2url.com/r2/default/images/1771496186546-1a78a325-b0dc-49e8-aff5-cd8c7e61e792.png')" class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-[#ff2a85] via-[#5e5ce6] to-[#00d2ff] p-1.5 mb-4 md:mb-6 shadow-[0_15px_35px_rgba(94,92,230,0.4)] transform hover:scale-105 transition-transform duration-400 cursor-zoom-in">
+            <div class="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden border-[3px] md:border-[4px] border-white/90 dark:border-slate-800">
+                <img src="https://image2url.com/r2/default/images/1771496186546-1a78a325-b0dc-49e8-aff5-cd8c7e61e792.png" alt="Nvn Arya" class="w-full h-full object-cover">
+            </div>
+        </div>
+        <h2 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-1 tracking-tight drop-shadow-sm">Nvn Arya</h2>
+        <p class="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs mb-6 md:mb-8 font-black uppercase tracking-widest opacity-80">Creator</p>
+        <a href="https://www.instagram.com/i_am_nvi?igsh=ZHdha2UxYWNyNjhy" target="_blank" class="flex items-center justify-center gap-2 w-full px-5 py-3.5 md:px-6 md:py-4 bg-white/60 dark:bg-black/40 hover:bg-white/90 dark:hover:bg-black/60 text-slate-900 dark:text-white rounded-xl md:rounded-2xl text-xs md:text-sm font-bold shadow-sm hover:shadow-lg transition-all duration-300 border border-white/60 dark:border-white/10 backdrop-blur-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5 text-[#ff2a85]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            Follow on Instagram
+        </a>
+        <div id="admin-panel-container" class="w-full mt-6 pt-6 md:mt-8 md:pt-8 border-t border-slate-300/30 dark:border-slate-700/30"></div>
+    </div>
+
+    <!-- Image Expander -->
+    <div id="expanded-image-container" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 md:p-8">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-3xl"></div>
+        <div class="relative max-w-2xl w-full flex flex-col items-center">
+            <button class="absolute -top-12 right-0 md:-top-16 md:-right-16 text-white/60 hover:text-white transition-colors p-2.5 md:p-3 bg-white/10 hover:bg-white/30 rounded-full backdrop-blur-xl border border-white/20 shadow-lg" onclick="closeImageExpander()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <img id="expanded-profile-img" src="" alt="Expanded View" class="max-w-full max-h-[80vh] rounded-[2rem] md:rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border-[3px] md:border-[4px] border-white/30 object-contain">
+        </div>
+    </div>
+
+    <!-- Holiday List Backdrop -->
+    <div id="holiday-list-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-2xl hidden z-[65] transition-opacity duration-500 opacity-0" onclick="closeHolidayListModal()"></div>
+    <div id="holiday-list-modal" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[94%] max-w-md glass-panel z-[70] hidden transition-all duration-500 flex flex-col border border-white/60 dark:border-white/20 opacity-0 scale-95 overflow-hidden" style="border-radius:2rem; max-height:85vh;">
+        <div class="flex items-center justify-between px-5 py-4 md:px-7 md:py-5 border-b border-white/40 dark:border-white/10 bg-white/30 dark:bg-white/5 flex-shrink-0">
+            <div class="flex items-center gap-2.5">
+                <span id="hlist-dot" class="w-3 h-3 md:w-3.5 md:h-3.5 rounded-full flex-shrink-0 shadow-md"></span>
+                <div>
+                    <h2 id="hlist-title" class="text-base md:text-lg font-black text-slate-900 dark:text-white tracking-tight leading-tight"></h2>
+                    <p id="hlist-subtitle" class="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mt-0.5"></p>
+                </div>
+            </div>
+            <button onclick="closeHolidayListModal()" class="p-2 rounded-full bg-white/50 dark:bg-white/10 hover:bg-white/80 dark:hover:bg-white/20 border border-white/60 dark:border-white/15 shadow-sm transition-all hover:scale-105 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-700 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div id="hlist-body" class="overflow-y-auto overscroll-contain p-4 md:p-5 flex-1" style="max-height: calc(85vh - 80px);"></div>
+    </div>
+
     <script>
-        const app = document.getElementById('app');
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-
-        // --- Data Layer (The 10 Pages of Content) ---
-        const navinDetails = {
-            name: "Navin Arya",
-            role: "Working Professional",
-            location: "Jaipur, India",
-            mobile: "1234567890",
-            email: "example@s.com",
-            bio: "I am a dedicated working professional based in Jaipur, passionate about **technology, leadership, and personal finance**. I use this blog to share insights gained from over a decade in the industry, focusing on practical advice, market trends, and strategies for career growth. My goal is to synthesize complex ideas into clear, actionable advice.",
-            expertise: ["Strategic Planning", "Project Management", "Financial Modeling", "Technology Adoption", "Team Leadership"]
+        // ===== FIREBASE =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyBY0nqRGsqMMDFTENPoT3es5NQZpUTGRe0",
+            authDomain: "energy-meter-data-37caf.firebaseapp.com",
+            projectId: "energy-meter-data-37caf",
+            storageBucket: "energy-meter-data-37caf.firebasestorage.app",
+            messagingSenderId: "525817374062",
+            appId: "1:525817374062:web:c815bdd169e60c1c98cd7f"
         };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        const blogData = [
-            // Post 1 (Page 4)
-            { id: 1, title: "The 80/20 Rule for Career Growth", date: "Oct 25, 2025", category: "Productivity", slug: "80-20-career-growth",
-              summary: "Applying the Pareto Principle to focus on the 20% of efforts that yield 80% of career results.",
-              content: [
-                "The Pareto Principle, or the 80/20 rule, is not just for business; it's a powerful framework for career development. We often spread our time thinly across many tasks, but true growth comes from identifying and prioritizing the **high-leverage activities**.",
-                "In a professional context, this 20% might include mastering a critical technical skill, networking with key stakeholders, or leading a high-impact project. The 80% often includes routine meetings, low-priority emails, or tasks that can be delegated or automated.",
-                "**Actionable Takeaway:** Dedicate 2 hours each week to one high-leverage skill. Track its impact over a quarter. You'll be surprised how quickly you accelerate past colleagues focusing on sheer volume of work.",
-                "This principle demands ruthless prioritization. If an activity doesn't directly contribute to your major career objectives, it should be minimized or eliminated."
-            ]},
-            // Post 2 (Page 5)
-            { id: 2, title: "Demystifying Modern Cloud Architecture", date: "Oct 18, 2025", category: "Technology", slug: "modern-cloud-architecture",
-              summary: "A breakdown of serverless, microservices, and the future of scalable applications.",
-              content: [
-                "Cloud computing has moved beyond simple virtual machines. Today's modern applications rely on concepts like **microservices** and **serverless computing** to achieve unprecedented scalability and resilience.",
-                "Microservices break down large applications into smaller, independent services that communicate via APIs. This allows teams to iterate faster and deploy features without affecting the entire system. Think of it as replacing a large, monolithic house with many small, specialized workshops.",
-                "Serverless doesn't mean no servers; it means managing servers is abstracted away. Platforms like AWS Lambda or Azure Functions let you focus solely on the code. This is transformative for cost-efficiency and agility, especially for event-driven workloads.",
-                "The primary challenge lies in monitoring and managing distributed tracing across these complex architectures. Robust observability tools are now non-negotiable for any successful cloud deployment."
-            ]},
-            // Post 3 (Page 6)
-            { id: 3, title: "Financial Freedom: Building a 'Mochi' Portfolio", date: "Oct 10, 2025", category: "Finance", slug: "mochi-portfolio",
-              summary: "Introducing the 'Mochi' portfolio strategy: sticky, flexible, and resilient.",
-              content: [
-                "A 'Mochi' portfolio—named after the Japanese rice cake—is sticky (holds its value), flexible (can adapt to market conditions), and resilient (bounces back from volatility). It’s an approach designed for long-term growth and stability, ideal for a working professional.",
-                "This strategy typically advocates for a core allocation of **60% diversified, low-cost index funds**, 25% stable bonds or fixed-income assets, and a 15% 'growth' bucket for high-risk/high-reward investments like individual stocks or emerging markets.",
-                "The key is **automatic rebalancing**. When the 60% stock portion grows to 65% in a bull run, you sell the excess 5% and buy more bonds, enforcing discipline and selling high/buying low automatically. This takes the emotion out of investing.",
-                "For working professionals, consistency is king. Automate your monthly contributions and ignore the daily noise. Time in the market beats timing the market, always."
-            ]},
-            // Post 4 (Page 7)
-            { id: 4, title: "Leadership vs. Management: The Critical Difference", date: "Sep 28, 2025", category: "Leadership", slug: "leadership-vs-management",
-              summary: "Understanding the subtle but profound distinction between managing tasks and leading people.",
-              content: [
-                "While often used interchangeably, leadership and management are distinct disciplines. Management is about administering, maintaining, and controlling processes; leadership is about innovation, vision, and inspiring trust.",
-                "A manager organizes resources and ensures tasks are completed efficiently. A leader defines the future, articulates *why* the task matters, and motivates the team to overcome obstacles they didn't anticipate.",
-                "The transition from manager to leader is the most challenging pivot in a professional career. It requires shifting your focus from 'How was the task completed?' to 'What is the vision we are building?' and fostering autonomy in your team.",
-                "**Leading is listening.** True leaders spend less time giving instructions and more time understanding the challenges and aspirations of their team members. They create more leaders, not more followers."
-            ]},
-            // Post 5 (Page 8)
-            { id: 5, title: "Jaipur's Evolving Tech Ecosystem", date: "Sep 15, 2025", category: "Local Insight", slug: "jaipur-tech-ecosystem",
-              summary: "An overview of the rapid growth and future potential of the IT and startup scene in the Pink City.",
-              content: [
-                "Jaipur is quickly transitioning from a tourism hub to a burgeoning Tier-2 tech powerhouse. Driven by strong government support, affordable living, and a growing talent pool from local universities, the city is attracting significant investment.",
-                "The focus areas are emerging: EdTech, SaaS (Software as a Service), and e-commerce logistics. The supportive infrastructure, including co-working spaces and mentorship networks, is robust, creating a fertile ground for new ventures.",
-                "One key challenge remains: retaining senior talent who often migrate to metro cities. However, the quality of life and lower operational costs are increasingly balancing this equation, making it an attractive base for remote operations and smaller product companies.",
-                "I believe the next decade will cement Jaipur's role as a major contributor to India's digital economy, especially as remote work becomes the norm."
-            ]},
-            // Post 6 (Page 9)
-            { id: 6, title: "Mastering Asynchronous Communication", date: "Sep 1, 2025", category: "Productivity", slug: "asynchronous-communication",
-              summary: "Strategies for effective communication in a remote or hybrid work environment.",
-              content: [
-                "The shift to hybrid work demands a fundamental change in how we communicate. Relying less on instant response and more on thoughtful, detailed written communication is key to maximizing productivity.",
-                "**Asynchronous communication** means sending a message without the expectation of an immediate reply. Tools like Notion, Slack threads, and detailed project documents are central to this. It respects the recipient's focus time.",
-                "**Rules for Success:** 1. Write complete, standalone messages (don't send 'hi' and wait). 2. Define clear next steps and deadlines. 3. Summarize complex discussions with key decisions at the top. 4. Use video recordings (loom) for complicated explanations instead of long emails.",
-                "This approach reduces 'meeting fatigue,' allows global teams to collaborate efficiently across time zones, and encourages deep, focused work."
-            ]},
-            // Post 7 (Page 10)
-            { id: 7, title: "The Power of the Quarterly Review", date: "Aug 20, 2025", category: "Personal Development", slug: "quarterly-review-power",
-              summary: "Why a 90-day personal and professional review cycle beats annual planning.",
-              content: [
-                "Annual reviews are often too high-level and too far apart to drive real behavioral change. The **Quarterly Review (QR)** is the ideal cadence for a professional to assess progress, pivot strategies, and stay motivated.",
-                "A QR involves reviewing three key areas: **Health/Wellbeing**, **Career/Skills**, and **Finance/Investments**. The goal is not just to see *what* happened, but *why* it happened.",
-                "During the review, ask hard questions: 'Did I hit my learning goal?', 'Was my time allocation correct?', 'What is the single biggest bottleneck to my success right now?'. Be honest. If you are tracking the wrong metrics, change them.",
-                "The output of the QR should be 3-5 clear, measurable goals for the next 90 days. This short feedback loop ensures you are constantly course-correcting toward your long-term vision, making your progress exponential."
-            ]}
-        ];
+        let currentOpenDateStr = "";
+        let customHolidays = {};
+        let isAdmin = sessionStorage.getItem('bis_admin') === 'true';
+        let adminAutoLogoutTimer = null;
+        const ADMIN_SESSION_MINUTES = 5;
 
-        // --- Core Application Logic ---
+        function startAdminAutoLogout() {
+            clearAdminAutoLogout();
+            if (!isAdmin) return;
+            adminAutoLogoutTimer = setTimeout(() => {
+                if (isAdmin) {
+                    isAdmin = false;
+                    sessionStorage.removeItem('bis_admin');
+                    updateAdminPanelUI();
+                    const notice = document.createElement('div');
+                    notice.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(255,59,48,0.92);color:white;padding:10px 22px;border-radius:999px;font-size:12px;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,0.2);backdrop-filter:blur(20px);';
+                    notice.innerText = '🔒 Admin session expired (5 min)';
+                    document.body.appendChild(notice);
+                    setTimeout(() => { if(notice.parentNode) notice.parentNode.removeChild(notice); }, 3000);
+                }
+            }, ADMIN_SESSION_MINUTES * 60 * 1000);
+        }
+        function clearAdminAutoLogout() {
+            if (adminAutoLogoutTimer) { clearTimeout(adminAutoLogoutTimer); adminAutoLogoutTimer = null; }
+        }
+        if (isAdmin) startAdminAutoLogout();
 
-        const currentPage = { name: 'home', id: null };
+        // ===== SETTINGS STATE =====
+        let currentTheme = localStorage.getItem('bis_theme') || 'system';
+        let calType = localStorage.getItem('bis_caltype') || 'regular';
+        let weekStartSun = localStorage.getItem('bis_weekstart') === 'sun';
+        let showPanchang = localStorage.getItem('bis_panchang') !== 'hide';
+        let animationsOn = localStorage.getItem('bis_anim') !== 'off';
+        let weekendHighlight = localStorage.getItem('bis_weekend') !== 'off';
 
-        /**
-         * Converts the current state to a readable content object.
-         * @param {string} pageName - The name of the page to render.
-         * @param {number | null} postId - The ID of the post to render (if pageName is 'post').
-         */
-        function navigate(pageName, postId = null) {
-            currentPage.name = pageName;
-            currentPage.id = postId;
-            render();
-            // Update URL hash for sharing/back button
-            if (pageName === 'post' && postId) {
-                const post = blogData.find(p => p.id === postId);
-                window.location.hash = `#post/${post.slug}`;
-            } else if (pageName !== 'home') {
-                 window.location.hash = `#${pageName}`;
-            } else {
-                 window.location.hash = `#home`;
+        // ===== AUTO DARK/LIGHT MODE SYSTEM =====
+        const systemDarkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function applyTheme(theme) {
+            const html = document.documentElement;
+            if (theme === 'dark') {
+                html.classList.add('dark');
+            } else if (theme === 'light') {
+                html.classList.remove('dark');
+            } else { // system
+                if (systemDarkMQ.matches) html.classList.add('dark');
+                else html.classList.remove('dark');
             }
-            window.scrollTo(0, 0); // Scroll to top on navigation
+            syncDrawerDarkMode();
+            updateThemePills();
         }
 
-        /**
-         * Main render function: decides which page to display.
-         */
-        function render() {
-            let htmlContent = '';
+        function setTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('bis_theme', theme);
+            applyTheme(theme);
+        }
 
-            switch (currentPage.name) {
-                case 'home':
-                    htmlContent = renderHome();
-                    break;
-                case 'about':
-                    htmlContent = renderAbout();
-                    break;
-                case 'contact':
-                    htmlContent = renderContact();
-                    break;
-                case 'post':
-                    htmlContent = renderPost(currentPage.id);
-                    break;
-                default:
-                    // Fallback to home page
-                    currentPage.name = 'home';
-                    htmlContent = renderHome();
+        function toggleDarkModeManual() {
+            // Manual toggle switches to explicit light/dark (overrides system)
+            const isDark = document.documentElement.classList.contains('dark');
+            setTheme(isDark ? 'light' : 'dark');
+        }
+
+        // Listen to system preference changes in real-time
+        systemDarkMQ.addEventListener('change', (e) => {
+            if (currentTheme === 'system') applyTheme('system');
+        });
+
+        // Apply theme on load
+        applyTheme(currentTheme);
+
+        function updateThemePills() {
+            ['system','light','dark'].forEach(t => {
+                const el = document.getElementById('pill-' + t);
+                if (el) {
+                    if (t === currentTheme) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+        }
+
+        // ===== CALENDAR SETTINGS FUNCTIONS =====
+        function setCalType(type) {
+            calType = type;
+            localStorage.setItem('bis_caltype', type);
+            const grid = document.getElementById('calendar-swipe-zone');
+            if (type === 'compact') grid.classList.add('compact-mode');
+            else grid.classList.remove('compact-mode');
+            document.getElementById('pill-regular').classList.toggle('active', type === 'regular');
+            document.getElementById('pill-compact').classList.toggle('active', type === 'compact');
+        }
+
+        function toggleWeekStart() {
+            weekStartSun = document.getElementById('week-start-toggle').checked;
+            localStorage.setItem('bis_weekstart', weekStartSun ? 'sun' : 'mon');
+            document.getElementById('week-start-label').textContent = weekStartSun ? 'Sunday' : 'Monday';
+            updateDayHeaders();
+            renderCalendar();
+        }
+
+        function togglePanchang() {
+            showPanchang = document.getElementById('panchang-toggle').checked;
+            localStorage.setItem('bis_panchang', showPanchang ? 'show' : 'hide');
+            const sec = document.getElementById('internet-data-section');
+            if (sec) sec.style.display = showPanchang ? '' : 'none';
+        }
+
+        function toggleAnimations() {
+            animationsOn = document.getElementById('animation-toggle').checked;
+            localStorage.setItem('bis_anim', animationsOn ? 'on' : 'off');
+        }
+
+        function toggleWeekendHighlight() {
+            weekendHighlight = document.getElementById('weekend-toggle').checked;
+            localStorage.setItem('bis_weekend', weekendHighlight ? 'on' : 'off');
+            renderCalendar();
+        }
+
+        function updateDayHeaders() {
+            const headers = document.getElementById('day-headers');
+            if (!headers) return;
+            const days = weekStartSun 
+                ? ['Sun','Mon','Tue','Wed','Thu','<span class="text-[#ff9f0a]">Fri</span>','<span class="text-[#ff9f0a]">Sat</span>']
+                : ['Mon','Tue','Wed','Thu','Fri','<span class="text-[#ff9f0a]">Sat</span>','<span class="text-[#ff9f0a]">Sun</span>'];
+            headers.innerHTML = days.map(d => `<div>${d}</div>`).join('');
+        }
+
+        // ===== HOLIDAY DATA =====
+        const realToday = new Date();
+        let displayMonth = realToday.getMonth();
+        let displayYear = realToday.getFullYear();
+        if (displayYear < 1950) displayYear = 2026;
+        let transitionDirection = 'fade';
+
+        const gh = [
+            { date: '2026-01-26', name: 'Republic Day', description: 'Honors the date on which the Constitution of India came into effect.' },
+            { date: '2026-03-04', name: 'Holi', description: 'The Festival of Colors, celebrating the arrival of spring.' },
+            { date: '2026-03-21', name: 'Id-ul-Fitr', description: 'Marks the end of Ramadan.' },
+            { date: '2026-03-26', name: 'Ram Navami', description: 'Celebrates the birth anniversary of Lord Rama.' },
+            { date: '2026-03-31', name: 'Mahavir Jayanti', description: 'The most important religious holiday for Jains.' },
+            { date: '2026-04-03', name: 'Good Friday', description: 'A Christian holiday commemorating the crucifixion of Jesus.' },
+            { date: '2026-05-01', name: 'Budha Purnima', description: 'Commemorates the birth, enlightenment, and death of Gautama Buddha.' },
+            { date: '2026-05-27', name: 'Id-ul-Zuha (Bakrid)', description: 'The Festival of Sacrifice.' },
+            { date: '2026-06-26', name: 'Muharram', description: 'The first month of the Islamic calendar.' },
+            { date: '2026-08-15', name: 'Independence Day', description: "Commemorates India's independence." },
+            { date: '2026-08-26', name: 'Milad-un-Nabi', description: 'Commemorates the birthday of the Islamic prophet Muhammad.' },
+            { date: '2026-09-04', name: 'Janmashtami', description: 'Celebrates the birth of Lord Krishna.' },
+            { date: '2026-10-02', name: 'Mahatma Gandhi Birthday', description: 'Celebrates the birthday of Mahatma Gandhi.' },
+            { date: '2026-10-20', name: 'Dussehra', description: 'Marks the victory of Rama over the demon king Ravana.' },
+            { date: '2026-11-08', name: 'Diwali', description: 'The Festival of Lights.' },
+            { date: '2026-11-24', name: 'Guru Nanak Birthday', description: 'Celebrates the birth of the first Sikh Guru.' },
+            { date: '2026-12-25', name: 'Christmas Day', description: 'An annual festival commemorating the birth of Jesus Christ.' }
+        ];
+
+        const rh = [
+            { date: '2026-01-01', name: 'New Year Day', description: 'The first day of the year.' },
+            { date: '2026-01-13', name: 'Lohri', description: 'A popular winter folk festival.' },
+            { date: '2026-01-14', name: 'Makar Sankranti', description: 'Dedicated to the deity Surya (Sun).' },
+            { date: '2026-01-15', name: 'Magha Bihu/Pongal', description: 'Harvest festivals.' },
+            { date: '2026-01-23', name: 'Basant Panchami', description: 'Dedicated to Goddess Saraswati.' },
+            { date: '2026-01-30', name: 'Hazarat Ali Birthday', description: 'Commemorates the birth of Ali ibn Abi Talib.' },
+            { date: '2026-02-01', name: 'Guru Ravi Das Birthday', description: 'Celebrates the birth of Guru Ravidas.' },
+            { date: '2026-02-12', name: 'Dayananda Saraswati Birthday', description: 'Birth anniversary of the founder of the Arya Samaj.' },
+            { date: '2026-02-15', name: 'Maha Shivaratri', description: 'A Hindu festival celebrated annually in honour of the god Shiva.' },
+            { date: '2026-02-19', name: 'Shivaji Jayanti', description: 'Birth anniversary of Chhatrapati Shivaji Maharaj.' },
+            { date: '2026-03-03', name: 'Holika Dahan', description: 'Celebrated the night before Holi.' },
+            { date: '2026-03-20', name: 'Gudi Padwa/Ugadi', description: "New Year's Day." },
+            { date: '2026-03-22', name: 'Easter Sunday', description: 'Celebrates the resurrection of Jesus.' },
+            { date: '2026-04-01', name: 'Chaitra Sukladi', description: 'New Year based on the lunar calendar.' },
+            { date: '2026-04-14', name: 'Ambedkar Jayanti', description: 'Dr. B.R. Ambedkar jayanti.' },
+            { date: '2026-05-09', name: 'Guru Rabindranath Birthday', description: 'Birth anniversary of Rabindranath Tagore.' },
+            { date: '2026-07-16', name: 'Rath Yatra', description: 'A major Hindu festival associated with Lord Jagannath.' },
+            { date: '2026-08-16', name: 'Parsi New Year', description: 'Navroz.' },
+            { date: '2026-08-27', name: 'Onam', description: 'An annual harvest festival.' },
+            { date: '2026-08-28', name: 'Raksha Bandhan', description: 'Celebrates the bond of protection and love.' },
+            { date: '2026-09-14', name: 'Ganesh Chaturthi', description: 'Celebrates the arrival of Lord Ganesh to earth.' },
+            { date: '2026-10-18', name: 'Maha Saptami', description: 'The seventh day of Durga Puja.' },
+            { date: '2026-10-19', name: 'Maha Ashtami', description: 'The eighth day of Durga Puja.' },
+            { date: '2026-10-21', name: 'Vijayadashami', description: 'Concluding Durga Puja.' },
+            { date: '2026-10-26', name: 'Maharishi Valmiki Birthday', description: 'Birth anniversary of the sage Valmiki.' },
+            { date: '2026-10-29', name: 'Karaka Chaturthi', description: 'Karwa Chauth.' },
+            { date: '2026-11-07', name: 'Naraka Chaturdasi', description: 'Celebrated one day before Diwali.' },
+            { date: '2026-11-09', name: 'Govardhan Puja', description: 'Dedicated to Lord Krishna.' },
+            { date: '2026-11-10', name: 'Bhai Dooj', description: 'Celebrating the bond between brothers and sisters.' },
+            { date: '2026-11-16', name: 'Chhath Puja', description: 'A festival dedicated to the Sun God.' },
+            { date: '2026-11-20', name: 'Guru Teg Bahadur Day', description: 'Commemorates the martyrdom of the ninth Sikh Guru.' },
+            { date: '2026-12-24', name: 'Christmas Eve', description: 'The evening before Christmas Day.' },
+            { date: '2026-07-03', name: "Nvn's Birthday", description: 'The Birthday Celebration of Navin Arya (Personal Event).' }
+        ];
+
+        // ===== PANCHANG ENGINE =====
+        function getAccuratePanchang(dateStr) {
+            const date = new Date(dateStr + "T06:00:00+05:30");
+            const j2000 = new Date(Date.UTC(2000,0,1,12,0,0));
+            const d = (date.getTime() - j2000.getTime()) / 86400000;
+            const rad = Math.PI / 180;
+            const sin = (deg) => Math.sin(deg * rad);
+            let L_sun_mean = (280.460 + 0.9856474 * d) % 360; if (L_sun_mean < 0) L_sun_mean += 360;
+            let M_sun = (357.528 + 0.9856003 * d) % 360; if (M_sun < 0) M_sun += 360;
+            let L_sun_true = (L_sun_mean + 1.915 * sin(M_sun) + 0.020 * sin(2*M_sun)) % 360; if (L_sun_true < 0) L_sun_true += 360;
+            let L_moon_mean = (218.316 + 13.1763965 * d) % 360; if (L_moon_mean < 0) L_moon_mean += 360;
+            let M_moon = (134.963 + 13.0649930 * d) % 360; if (M_moon < 0) M_moon += 360;
+            let D = L_moon_mean - L_sun_mean;
+            let L_moon_true = (L_moon_mean + 6.289*sin(M_moon) + 1.274*sin(2*D-M_moon) + 0.658*sin(2*D) + 0.214*sin(2*M_moon) - 0.186*sin(M_sun)) % 360;
+            if (L_moon_true < 0) L_moon_true += 360;
+            const ayanamsha = 24.13;
+            let nirayana_sun = (L_sun_true - ayanamsha + 360) % 360;
+            let nirayana_moon = (L_moon_true - ayanamsha + 360) % 360;
+            let diff = L_moon_true - L_sun_true; if (diff < 0) diff += 360;
+            let tithiIndex = Math.floor(diff / 12) + 1;
+            let paksha = tithiIndex <= 15 ? "Shukla" : "Krishna";
+            let tithiNum = tithiIndex > 15 ? tithiIndex - 15 : tithiIndex;
+            const tithiNames = ["Pratipada","Dwitiya","Tritiya","Chaturthi","Panchami","Shashthi","Saptami","Ashtami","Navami","Dashami","Ekadashi","Dwadashi","Trayodashi","Chaturdashi","Purnima","Amavasya"];
+            let tithiName = tithiNames[tithiNum - 1];
+            if (tithiIndex === 15) tithiName = "Purnima";
+            if (tithiIndex === 30) tithiName = "Amavasya";
+            let sunRashiIdx = Math.floor(nirayana_sun / 30);
+            let moonRashiIdx = Math.floor(nirayana_moon / 30);
+            const rashiNames = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
+            const overrides = {
+                "2026-03-26": { tithi:"Navami", paksha:"Shukla" },
+                "2026-10-20": { tithi:"Dashami", paksha:"Shukla" },
+                "2026-11-08": { tithi:"Amavasya", paksha:"Krishna" },
+                "2026-03-04": { tithi:"Purnima", paksha:"Shukla" },
+                "2026-09-04": { tithi:"Ashtami", paksha:"Krishna" },
+            };
+            if (overrides[dateStr]) { tithiName = overrides[dateStr].tithi; paksha = overrides[dateStr].paksha; }
+            return { tithi: tithiName, paksha: paksha, sunsign: rashiNames[sunRashiIdx], moonsign: rashiNames[moonRashiIdx] };
+        }
+
+        function safeSetText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
+        const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+        function populateYearPicker() {
+            const yp = document.getElementById('year-picker');
+            if (!yp) return;
+            let html = '';
+            for (let y = 1950; y <= 2100; y++) html += `<option value="${y}">${y}</option>`;
+            yp.innerHTML = html;
+        }
+
+        function jumpToDate() {
+            const m = parseInt(document.getElementById('month-picker').value);
+            const y = parseInt(document.getElementById('year-picker').value);
+            if (y > displayYear || (y === displayYear && m > displayMonth)) transitionDirection = 'right';
+            else if (y < displayYear || (y === displayYear && m < displayMonth)) transitionDirection = 'left';
+            else transitionDirection = 'fade';
+            displayMonth = m; displayYear = y;
+            renderCalendar();
+        }
+
+        // ===== ENHANCED NAVIGATION ANIMATIONS =====
+        function prevMonthAnim(btn) {
+            if (btn && animationsOn) { btn.classList.add('nav-press'); setTimeout(() => btn.classList.remove('nav-press'), 350); }
+            displayMonth--;
+            if (displayMonth < 0) { displayMonth = 11; displayYear--; }
+            transitionDirection = 'left';
+            renderCalendar();
+        }
+        function nextMonthAnim(btn) {
+            if (btn && animationsOn) { btn.classList.add('nav-press'); setTimeout(() => btn.classList.remove('nav-press'), 350); }
+            displayMonth++;
+            if (displayMonth > 11) { displayMonth = 0; displayYear++; }
+            transitionDirection = 'right';
+            renderCalendar();
+        }
+        function prevMonth() { prevMonthAnim(null); }
+        function nextMonth() { nextMonthAnim(null); }
+
+        // Enhanced Jump to Today with bounce animation
+        function goToTodayAnim(btn) {
+            const wasAlreadyToday = (displayMonth === realToday.getMonth() && displayYear === realToday.getFullYear());
+            displayMonth = realToday.getMonth();
+            displayYear = realToday.getFullYear();
+            transitionDirection = wasAlreadyToday ? 'today' : 'fade';
+            renderCalendar();
+            // Button press effect
+            if (btn && animationsOn) {
+                btn.classList.add('nav-press');
+                setTimeout(() => btn.classList.remove('nav-press'), 350);
             }
-            
-            // Fade in content
-            app.innerHTML = `<div class="page-content">${htmlContent}</div>`;
+        }
+        function goToToday() { goToTodayAnim(null); }
+
+        // ===== RENDER CALENDAR =====
+        function renderCalendar() {
+            const grid = document.getElementById('days-grid');
+            if (!grid) return;
+
+            grid.classList.remove('slide-in-right','slide-in-left','fade-in','today-jump');
+            void grid.offsetWidth;
+            grid.innerHTML = '';
+
+            const mp = document.getElementById('month-picker');
+            const yp = document.getElementById('year-picker');
+            if (mp) mp.value = displayMonth;
+            if (yp) yp.value = displayYear;
+
+            const firstDay = new Date(displayYear, displayMonth, 1).getDay();
+            const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
+
+            // Week start: 0=Mon(default), 6=Sun
+            let startOffset;
+            if (weekStartSun) {
+                startOffset = firstDay; // Sun=0 for Sunday start
+            } else {
+                startOffset = firstDay === 0 ? 6 : firstDay - 1; // Mon start
+            }
+
+            let html = '';
+            for (let i = 0; i < startOffset; i++) html += `<div class="date-cell opacity-0 pointer-events-none"></div>`;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${displayYear}-${String(displayMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                let isGH = false, isRH = false, label = "";
+
+                if (customHolidays[dateStr]) {
+                    const cHol = customHolidays[dateStr];
+                    if (cHol.type === 'GH') { isGH = true; label = cHol.name; }
+                    else if (cHol.type === 'RH') { isRH = true; label = cHol.name; }
+                } else {
+                    const ghH = gh.find(h => h.date === dateStr);
+                    const rhH = rh.find(h => h.date === dateStr);
+                    if (ghH) { isGH = true; label = ghH.name; }
+                    else if (rhH) { isRH = true; label = rhH.name; }
+                }
+
+                const dayOfWeek = new Date(displayYear, displayMonth, d).getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                const isToday = (d === realToday.getDate() && displayMonth === realToday.getMonth() && displayYear === realToday.getFullYear());
+
+                let cellClass = "date-cell glass-button shadow-none border-none bg-transparent ";
+                let dateNumClass = "text-base md:text-xl ";
+
+                if (isGH) {
+                    cellClass = "date-cell holiday-gh ";
+                    dateNumClass += "font-black drop-shadow-sm ";
+                } else if (isRH) {
+                    cellClass = "date-cell holiday-rh ";
+                    dateNumClass += "font-black drop-shadow-sm ";
+                } else if (isWeekend && weekendHighlight) {
+                    cellClass += "sat-sun ";
+                    dateNumClass += "font-black ";
+                } else {
+                    cellClass += "regular-day text-slate-800 dark:text-slate-100 ";
+                    dateNumClass += "font-bold ";
+                }
+
+                if (isToday) cellClass = "date-cell today-highlight flex justify-center items-center ";
+
+                html += `<div class="${cellClass}" onclick="openModal('${dateStr}')">
+                            <span class="${dateNumClass} ${isToday ? 'text-white' : ''} tracking-tight">${d}</span>
+                            ${label ? `<span class="holiday-label">${label}</span>` : ''}
+                         </div>`;
+            }
+
+            grid.innerHTML = html;
+
+            if (!animationsOn) return;
+            if (transitionDirection === 'right') grid.classList.add('slide-in-right');
+            else if (transitionDirection === 'left') grid.classList.add('slide-in-left');
+            else if (transitionDirection === 'today') grid.classList.add('today-jump');
+            else grid.classList.add('fade-in');
+        }
+
+        // ===== ADMIN =====
+        function updateAdminPanelUI() {
+            const panel = document.getElementById('admin-panel-container');
+            if (!panel) return;
+            if (isAdmin) {
+                panel.innerHTML = `
+                    <div class="flex flex-col gap-3 md:gap-4">
+                        <button onclick="handleAdminLogout()" class="w-full bg-white/40 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/50 text-[#ff3b30] dark:text-[#ff6961] text-xs font-black py-3.5 md:py-4 rounded-xl md:rounded-2xl shadow-sm transition-transform hover:scale-105 border border-[#ff3b30]/30 backdrop-blur-xl">🚪 Logout Admin</button>
+                        <p class="text-[#34c759] dark:text-[#30d158] text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center drop-shadow-sm">✅ Editor Access Granted</p>
+                    </div>`;
+            } else {
+                panel.innerHTML = `
+                    <button onclick="document.getElementById('login-box').classList.toggle('hidden')" class="text-[9px] md:text-[10px] font-black text-slate-500 hover:text-[#5e5ce6] dark:hover:text-[#5e5ce6] uppercase tracking-widest transition-colors flex items-center justify-center gap-1.5 md:gap-2 mx-auto w-full outline-none glass-button py-2.5 md:py-3.5 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                        Admin Login
+                    </button>
+                    <div id="login-box" class="hidden mt-3 flex flex-col gap-2 bg-white/40 dark:bg-black/20 p-4 rounded-2xl border border-white/50 dark:border-white/10 backdrop-blur-xl">
+                        <input type="text" id="admin-id" placeholder="Username" class="w-full bg-white/60 dark:bg-black/40 border border-white/40 dark:border-white/10 rounded-xl p-3 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#5e5ce6] font-bold placeholder:text-slate-500 shadow-inner">
+                        <input type="password" id="admin-pwd" placeholder="Password" class="w-full bg-white/60 dark:bg-black/40 border border-white/40 dark:border-white/10 rounded-xl p-3 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#5e5ce6] font-bold placeholder:text-slate-500 shadow-inner">
+                        <button onclick="handleAdminLogin()" class="w-full bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 text-[10px] font-black py-3 rounded-xl shadow-lg transition-transform hover:scale-105 mt-1">Sign In</button>
+                        <p id="login-error" class="text-[#ff3b30] text-[9px] hidden font-black text-center mt-1 uppercase tracking-widest">Invalid Credentials!</p>
+                    </div>`;
+            }
+        }
+
+        function handleAdminLogin() {
+            const id = document.getElementById('admin-id').value;
+            const pwd = document.getElementById('admin-pwd').value;
+            if (id === 'Admin' && pwd === 'Bis@1234') {
+                isAdmin = true;
+                sessionStorage.setItem('bis_admin', 'true');
+                startAdminAutoLogout();
+                const err = document.getElementById('login-error');
+                if (err) err.classList.add('hidden');
+                setTimeout(() => { updateAdminPanelUI(); closeModal(); }, 500);
+            } else {
+                const err = document.getElementById('login-error');
+                if (err) err.classList.remove('hidden');
+            }
+        }
+
+        function handleAdminLogout() {
+            isAdmin = false;
+            sessionStorage.removeItem('bis_admin');
+            clearAdminAutoLogout();
+            updateAdminPanelUI();
+            closeModal();
+        }
+
+        async function fetchHolidays() {
+            if (db) {
+                try {
+                    const snapshot = await db.collection("bis_calendar_holidays").get();
+                    customHolidays = {};
+                    snapshot.forEach(doc => { customHolidays[doc.id] = doc.data(); });
+                } catch (e) { console.error("Error fetching holidays:", e); }
+            }
+            renderCalendar();
+        }
+
+        async function saveHolidayData() {
+            if (!isAdmin || !currentOpenDateStr || !db) return;
+            const typeEl = document.getElementById('edit-hol-type');
+            const nameEl = document.getElementById('edit-hol-name');
+            const descEl = document.getElementById('edit-hol-desc');
+            const statusBox = document.getElementById('hol-save-status');
+            if (!typeEl || !nameEl || !descEl) return;
+            const type = typeEl.value, name = nameEl.value.trim(), desc = descEl.value.trim();
+            if (type !== 'NONE' && name === '') { alert("Please enter a Holiday Name!"); return; }
+            try {
+                await db.collection("bis_calendar_holidays").doc(currentOpenDateStr).set({ type, name, description: desc, date: currentOpenDateStr });
+                customHolidays[currentOpenDateStr] = { type, name, description: desc, date: currentOpenDateStr };
+                if (statusBox) statusBox.classList.remove('hidden');
+                setTimeout(() => { if (statusBox) statusBox.classList.add('hidden'); renderCalendar(); openModal(currentOpenDateStr); }, 1000);
+            } catch(e) { console.error(e); alert("Failed to save. Check Firebase Rules."); }
+        }
+
+        // ===== MODAL =====
+        function openModal(dateStr) {
+            try {
+                currentOpenDateStr = dateStr;
+                const errorBox = document.getElementById('error-box');
+                if (errorBox) errorBox.classList.add('hidden');
+                const dateObj = new Date(dateStr);
+                const formattedDate = dateObj.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric', weekday:'long' });
+                const dayOfWeek = dateObj.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                let isGH = false, isRH = false, title = "", description = "", type = "";
+                if (customHolidays[dateStr]) {
+                    const cHol = customHolidays[dateStr];
+                    if (cHol.type === 'GH') { isGH = true; title = cHol.name; description = cHol.description; }
+                    else if (cHol.type === 'RH') { isRH = true; title = cHol.name; description = cHol.description; }
+                } else {
+                    const hardGH = gh.find(h => h.date === dateStr);
+                    const hardRH = rh.find(h => h.date === dateStr);
+                    if (hardGH) { isGH = true; title = hardGH.name; description = hardGH.description; }
+                    else if (hardRH) { isRH = true; title = hardRH.name; description = hardRH.description; }
+                }
+                if (isGH) type = "Gazetted Holiday";
+                else if (isRH) type = "Restricted Holiday";
+                else if (isWeekend) { title = dayOfWeek === 0 ? "Sunday" : "Saturday"; type = "Weekend Off"; description = "Have a great weekend!"; }
+                else { title = formattedDate; type = "Working Day"; description = ""; }
+
+                safeSetText('modal-title', title);
+                safeSetText('modal-date', formattedDate);
+                safeSetText('modal-type', type);
+
+                const holidaySection = document.getElementById('holiday-section');
+                if (description && description.trim() !== "") {
+                    safeSetText('modal-desc', description);
+                    if (holidaySection) holidaySection.classList.remove('hidden');
+                } else {
+                    if (holidaySection) holidaySection.classList.add('hidden');
+                }
+
+                const header = document.getElementById('modal-header');
+                const typeBadge = document.getElementById('modal-type');
+                if (header && typeBadge) {
+                    if (type.includes('Gazetted')) {
+                        header.className = "p-6 md:p-8 text-white bg-gradient-to-br from-[#ff2a85] to-[#d70015] transition-colors border-b border-white/20";
+                        typeBadge.className = "inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-white/20 backdrop-blur-md border border-white/30 mb-2 md:mb-3 shadow-sm";
+                    } else if (type.includes('Restricted')) {
+                        header.className = "p-6 md:p-8 text-white bg-gradient-to-br from-[#00d2ff] to-[#0071a4] transition-colors border-b border-white/20";
+                        typeBadge.className = "inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-white/20 backdrop-blur-md border border-white/30 mb-2 md:mb-3 shadow-sm";
+                    } else if (type.includes('Weekend')) {
+                        header.className = "p-6 md:p-8 text-white bg-gradient-to-br from-[#ff9f0a] to-[#ff3b30] transition-colors border-b border-white/20";
+                        typeBadge.className = "inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-white/20 backdrop-blur-md border border-white/30 mb-2 md:mb-3 shadow-sm";
+                    } else {
+                        header.className = "p-6 md:p-8 text-slate-900 dark:text-white bg-white/50 dark:bg-black/30 transition-colors border-b border-white/40 dark:border-white/10 backdrop-blur-xl";
+                        typeBadge.className = "inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-black/10 dark:bg-white/20 border border-black/5 dark:border-white/10 mb-2 md:mb-3 shadow-inner text-slate-600 dark:text-slate-300";
+                    }
+                }
+
+                const content = document.getElementById('modal-content');
+                if (content) {
+                    if (title.toLowerCase().includes("nvn's birthday")) { content.classList.add('special-day-glow'); triggerConfetti(); }
+                    else content.classList.remove('special-day-glow');
+                }
+
+                const backdrop = document.getElementById('modal-backdrop');
+                if (backdrop && content) {
+                    backdrop.classList.remove('hidden');
+                    content.classList.remove('hidden');
+                    const modalInner = document.getElementById('modal-body-scroll');
+                    if (modalInner) modalInner.scrollTop = 0;
+                    document.body.classList.add('overflow-hidden');
+                    setTimeout(() => { backdrop.classList.add('opacity-100'); content.classList.add('opacity-100','scale-100'); }, 10);
+                }
+
+                // Panchang
+                const panchangSection = document.getElementById('internet-data-section');
+                if (panchangSection) panchangSection.style.display = showPanchang ? '' : 'none';
+
+                const loadingEl = document.getElementById('loading-internet');
+                const resultsEl = document.getElementById('internet-results');
+                if (loadingEl) loadingEl.classList.remove('hidden');
+                if (resultsEl) resultsEl.classList.add('hidden');
+                safeSetText('api-sunrise','--'); safeSetText('api-sunset','--');
+                const panchang = getAccuratePanchang(dateStr);
+                safeSetText('api-tithi', panchang.tithi); safeSetText('api-paksha', panchang.paksha);
+                safeSetText('api-sunsign', panchang.sunsign); safeSetText('api-moonsign', panchang.moonsign);
+
+                fetch(`https://api.sunrise-sunset.org/json?lat=28.6139&lng=77.2090&date=${dateStr}&formatted=0`)
+                .then(r => r.json()).then(data => {
+                    if (data.status === "OK") {
+                        const opts = { timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit' };
+                        safeSetText('api-sunrise', new Date(data.results.sunrise).toLocaleTimeString('en-IN', opts));
+                        safeSetText('api-sunset', new Date(data.results.sunset).toLocaleTimeString('en-IN', opts));
+                    }
+                    if (loadingEl) loadingEl.classList.add('hidden');
+                    if (resultsEl) resultsEl.classList.remove('hidden');
+                }).catch(e => {
+                    if (loadingEl) loadingEl.classList.add('hidden');
+                    if (resultsEl) resultsEl.classList.remove('hidden');
+                });
+
+                // Notes
+                const noteInput = document.getElementById('modal-note-input');
+                const noteSaveStatus = document.getElementById('note-save-status');
+                if (noteInput) noteInput.value = "Loading note...";
+                if (noteSaveStatus) noteSaveStatus.classList.add('hidden');
+                if (db) {
+                    db.collection("bis_calendar_notes").doc(dateStr).get().then(doc => {
+                        if (noteInput) noteInput.value = doc.exists ? (doc.data().note || "") : "";
+                    }).catch(() => { if (noteInput) noteInput.value = ""; });
+                } else { if (noteInput) noteInput.value = ""; }
+
+                // Admin Editor
+                const adminEditor = document.getElementById('admin-holiday-editor');
+                if (adminEditor) {
+                    if (isAdmin) {
+                        adminEditor.classList.remove('hidden');
+                        const typeInput = document.getElementById('edit-hol-type');
+                        const nameInput = document.getElementById('edit-hol-name');
+                        const descInput = document.getElementById('edit-hol-desc');
+                        if (typeInput) typeInput.value = isGH ? 'GH' : (isRH ? 'RH' : 'NONE');
+                        if (nameInput) nameInput.value = (title !== formattedDate && !title.includes('Sunday') && !title.includes('Saturday')) ? title : '';
+                        if (descInput) descInput.value = description !== 'Have a great weekend!' ? description : '';
+                    } else adminEditor.classList.add('hidden');
+                }
+            } catch (error) { console.error("Modal error:", error); }
+        }
+
+        async function saveFirebaseNote() {
+            const noteInput = document.getElementById('modal-note-input');
+            const noteText = noteInput ? noteInput.value.trim() : "";
+            const btn = document.getElementById('save-note-btn');
+            const status = document.getElementById('note-save-status');
+            const errBox = document.getElementById('error-box');
+            if (!currentOpenDateStr || !db) return;
+            if (btn) { btn.innerText = "Saving..."; btn.disabled = true; }
+            if (status) status.classList.add('hidden');
+            if (errBox) errBox.classList.add('hidden');
+            try {
+                await db.collection("bis_calendar_notes").doc(currentOpenDateStr).set(
+                    { note: noteText, timestamp: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }
+                );
+                if (btn) { btn.innerText = "Save Note"; btn.disabled = false; }
+                if (status) { status.classList.remove('hidden'); setTimeout(() => status.classList.add('hidden'), 3000); }
+            } catch (error) {
+                if (btn) { btn.innerText = "Save Note"; btn.disabled = false; }
+                if (errBox) { errBox.innerText = "Save failed! Error: " + error.message; errBox.classList.remove('hidden'); }
+            }
+        }
+
+        function openProfileModal() {
+            const backdrop = document.getElementById('modal-backdrop');
+            const profileContent = document.getElementById('profile-modal');
+            updateAdminPanelUI();
+            if (backdrop) backdrop.classList.remove('hidden');
+            if (profileContent) profileContent.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
             setTimeout(() => {
-                const contentDiv = app.querySelector('.page-content');
-                if(contentDiv) contentDiv.classList.add('active');
+                if (backdrop) backdrop.classList.add('opacity-100');
+                if (profileContent) profileContent.classList.add('opacity-100','scale-100');
             }, 10);
         }
 
-        // --- Page Render Functions ---
-
-        /**
-         * Renders the Home/Blog Listing page (Page 1)
-         */
-        function renderHome() {
-            return `
-                <section class="text-center py-12 bg-white rounded-xl shadow-lg mb-8">
-                    <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl lg:text-6xl mb-4">
-                        Insights from a <span class="text-accent-blue">Working Professional</span>
-                    </h1>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                        Deep dives into Tech, Finance, Leadership, and Productivity.
-                    </p>
-                </section>
-
-                <section class="py-10">
-                    <h2 class="text-3xl font-bold text-gray-900 border-b-2 border-accent-teal pb-2 mb-8">Latest Articles</h2>
-                    <div class="grid gap-8 lg:grid-cols-3 md:grid-cols-2">
-                        ${blogData.map(post => `
-                            <article class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transform hover:scale-[1.02] transition duration-300 border-t-4 border-accent-blue">
-                                <span class="text-xs font-semibold uppercase tracking-wider text-accent-teal">${post.category}</span>
-                                <h3 class="mt-2 text-xl font-bold text-gray-900 leading-snug">
-                                    <a href="#post/${post.slug}" onclick="navigate('post', ${post.id})" class="hover:text-accent-blue transition duration-300">
-                                        ${post.title}
-                                    </a>
-                                </h3>
-                                <p class="mt-4 text-gray-600 text-sm">${post.summary}</p>
-                                <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
-                                    <span>${post.date}</span>
-                                    <button onclick="navigate('post', ${post.id})" class="text-accent-blue hover:text-accent-teal font-semibold flex items-center">
-                                        Read Article
-                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                                    </button>
-                                </div>
-                            </article>
-                        `).join('')}
-                    </div>
-                </section>
-            `;
-        }
-
-        /**
-         * Renders the About Me page (Page 2)
-         */
-        function renderAbout() {
-            return `
-                <div class="bg-white p-8 md:p-12 rounded-xl shadow-2xl">
-                    <header class="text-center mb-8">
-                        <div class="w-24 h-24 mx-auto bg-accent-blue rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4">
-                            NA
-                        </div>
-                        <h1 class="text-4xl font-extrabold text-gray-900">${navinDetails.name}</h1>
-                        <p class="text-xl text-accent-blue font-semibold mt-1">${navinDetails.role} | ${navinDetails.location}</p>
-                    </header>
-
-                    <section class="mt-8 border-t border-gray-200 pt-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">My Journey & Philosophy</h2>
-                        <p class="text-lg text-gray-700 leading-relaxed">${navinDetails.bio}</p>
-                    </section>
-
-                    <section class="mt-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Core Expertise</h2>
-                        <div class="flex flex-wrap gap-4">
-                            ${navinDetails.expertise.map(skill => `
-                                <span class="bg-accent-teal/10 text-accent-teal font-medium px-4 py-2 rounded-full text-sm shadow-sm">
-                                    ${skill}
-                                </span>
-                            `).join('')}
-                        </div>
-                    </section>
-
-                    <section class="mt-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Connect</h2>
-                        <div class="flex flex-col space-y-3">
-                            <p class="flex items-center text-gray-700">
-                                <svg class="w-5 h-5 mr-3 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                Email: <a href="mailto:${navinDetails.email}" class="ml-2 text-accent-teal hover:underline">${navinDetails.email}</a>
-                            </p>
-                            <p class="flex items-center text-gray-700">
-                                <svg class="w-5 h-5 mr-3 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                Mobile: <span class="ml-2 text-gray-700">${navinDetails.mobile}</span>
-                            </p>
-                        </div>
-                    </section>
-                </div>
-            `;
-        }
-
-        /**
-         * Renders the Contact page (Page 3)
-         */
-        function renderContact() {
-            return `
-                <div class="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-xl shadow-2xl border-t-8 border-accent-teal">
-                    <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">Get In Touch</h1>
-                    <p class="text-center text-gray-600 mb-8">
-                        I'm always open to discussing industry trends, collaboration opportunities, or general professional inquiries.
-                    </p>
-
-                    <div class="grid md:grid-cols-2 gap-10">
-                        <!-- Contact Details -->
-                        <div>
-                            <h2 class="text-xl font-semibold text-accent-blue mb-4">Direct Details</h2>
-                            <div class="space-y-4">
-                                <div class="flex items-center">
-                                    <svg class="w-6 h-6 mr-3 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                    <div>
-                                        <p class="font-medium">Location</p>
-                                        <p class="text-gray-600">${navinDetails.location}</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <svg class="w-6 h-6 mr-3 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                    <div>
-                                        <p class="font-medium">Email</p>
-                                        <p class="text-gray-600"><a href="mailto:${navinDetails.email}" class="hover:underline">${navinDetails.email}</a></p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <svg class="w-6 h-6 mr-3 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                    <div>
-                                        <p class="font-medium">Mobile</p>
-                                        <p class="text-gray-600">${navinDetails.mobile}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Contact Form (Mock) -->
-                        <div>
-                            <h2 class="text-xl font-semibold text-accent-blue mb-4">Send a Message</h2>
-                            <form id="contact-form" onsubmit="handleFormSubmit(event)">
-                                <div class="mb-4">
-                                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                                    <input type="text" id="name" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-blue focus:ring-accent-blue p-2 border" required>
-                                </div>
-                                <div class="mb-4">
-                                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                    <input type="email" id="email" name="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-blue focus:ring-accent-blue p-2 border" required>
-                                </div>
-                                <div class="mb-6">
-                                    <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
-                                    <textarea id="message" name="message" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-blue focus:ring-accent-blue p-2 border" required></textarea>
-                                </div>
-                                <button type="submit" class="w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-accent-blue hover:bg-accent-teal transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-blue">
-                                    Send Message
-                                </button>
-                                <div id="form-message" class="mt-4 text-center text-sm font-medium hidden p-2 rounded-lg bg-green-100 text-green-700"></div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        /**
-         * Renders a detailed Blog Post (Pages 4 through 10)
-         * @param {number} id - The ID of the post.
-         */
-        function renderPost(id) {
-            const post = blogData.find(p => p.id === id);
-            if (!post) {
-                return `<div class="text-center py-20"><h1 class="text-3xl font-bold text-red-600">Post Not Found</h1><p class="mt-4 text-gray-600">The requested article could not be loaded.</p><button onclick="navigate('home')" class="mt-6 text-accent-blue hover:text-accent-teal font-semibold">Go back to Home</button></div>`;
-            }
-
-            return `
-                <article class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
-                    <span class="text-sm font-semibold uppercase tracking-wider text-accent-teal">${post.category}</span>
-                    <h1 class="mt-2 text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">${post.title}</h1>
-                    <div class="flex items-center text-gray-500 text-sm mt-3 border-b pb-4 mb-8">
-                        <span class="mr-4">By Navin Arya</span>
-                        <span>Published: ${post.date}</span>
-                    </div>
-
-                    <div class="prose max-w-none text-lg text-gray-700 space-y-6">
-                        ${post.content.map(paragraph => `<p>${paragraph}</p>`).join('')}
-                    </div>
-
-                    <div class="mt-10 pt-6 border-t border-gray-200">
-                         <button onclick="navigate('home')" class="py-2 px-4 border border-accent-blue rounded-lg text-accent-blue hover:bg-accent-blue hover:text-white transition duration-300 font-medium">
-                            ← Back to all articles
-                        </button>
-                    </div>
-                </article>
-            `;
-        }
-
-
-        // --- Event Handlers and Initialization ---
-
-        /**
-         * Handles the mock contact form submission.
-         */
-        function handleFormSubmit(event) {
-            event.preventDefault();
-            const formMessage = document.getElementById('form-message');
-            formMessage.classList.remove('hidden', 'bg-red-100', 'text-red-700');
-            formMessage.classList.add('bg-green-100', 'text-green-700');
-            formMessage.textContent = 'Message sent successfully! Navin will get back to you shortly.';
-            formMessage.classList.remove('hidden');
-
-            // Clear form (Mock success)
-            document.getElementById('contact-form').reset();
-            
-            // Hide message after 5 seconds
+        function closeModal() {
+            const backdrop = document.getElementById('modal-backdrop');
+            const holidayContent = document.getElementById('modal-content');
+            const profileContent = document.getElementById('profile-modal');
+            const loginBox = document.getElementById('login-box');
+            if (loginBox) loginBox.classList.add('hidden');
+            if (backdrop) backdrop.classList.remove('opacity-100');
+            if (holidayContent) { holidayContent.classList.remove('opacity-100','scale-100'); setTimeout(() => holidayContent.classList.remove('special-day-glow'), 400); }
+            if (profileContent) profileContent.classList.remove('opacity-100','scale-100');
             setTimeout(() => {
-                formMessage.classList.add('hidden');
-            }, 5000);
+                if (backdrop) backdrop.classList.add('hidden');
+                if (holidayContent) holidayContent.classList.add('hidden');
+                if (profileContent) profileContent.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }, 400);
         }
 
-        /**
-         * Toggles the visibility of the mobile menu.
-         */
-        function toggleMobileMenu() {
-            mobileMenu.classList.toggle('hidden');
+        function expandImage(src) {
+            const expander = document.getElementById('expanded-image-container');
+            const img = document.getElementById('expanded-profile-img');
+            if (img) img.src = src;
+            if (expander) { expander.classList.remove('hidden'); expander.classList.add('active'); }
+        }
+        function closeImageExpander() {
+            const expander = document.getElementById('expanded-image-container');
+            if (expander) { expander.classList.add('hidden'); expander.classList.remove('active'); }
         }
 
-        /**
-         * Initializes the application based on the URL hash.
-         */
-        function initializeApp() {
-            document.getElementById('current-year').textContent = new Date().getFullYear();
-
-            // Setup mobile menu toggle
-            mobileMenuButton.addEventListener('click', toggleMobileMenu);
-
-            // Handle hash changes (browser back/forward buttons)
-            window.addEventListener('hashchange', handleHashChange);
-
-            // Initial load
-            handleHashChange();
+        // ===== SIDE MENU =====
+        function toggleSideMenu() {
+            const drawer = document.getElementById('side-drawer');
+            const isOpen = !drawer.classList.contains('-translate-x-full');
+            if (isOpen) closeSideMenu(); else openSideMenu();
+        }
+        function openSideMenu() {
+            const drawer = document.getElementById('side-drawer');
+            const overlay = document.getElementById('side-menu-overlay');
+            overlay.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            requestAnimationFrame(() => { overlay.classList.add('opacity-100'); drawer.classList.remove('-translate-x-full'); });
+            syncDrawerDarkMode();
+        }
+        function closeSideMenu() {
+            const drawer = document.getElementById('side-drawer');
+            const overlay = document.getElementById('side-menu-overlay');
+            drawer.classList.add('-translate-x-full');
+            overlay.classList.remove('opacity-100');
+            document.body.classList.remove('overflow-hidden');
+            setTimeout(() => overlay.classList.add('hidden'), 350);
+        }
+        function syncDrawerDarkMode() {
+            const drawer = document.getElementById('side-drawer');
+            if (!drawer) return;
+            const isDark = document.documentElement.classList.contains('dark');
+            if (isDark) { drawer.style.background = 'rgba(20,20,22,0.82)'; drawer.style.borderRight = '1px solid rgba(255,255,255,0.12)'; }
+            else { drawer.style.background = 'rgba(255,255,255,0.72)'; drawer.style.borderRight = '1px solid rgba(255,255,255,0.8)'; }
         }
 
-        /**
-         * Parses the URL hash to determine the current page.
-         */
-        function handleHashChange() {
-            let hash = window.location.hash.slice(1);
-            if (!hash || hash === 'home') {
-                navigate('home');
-            } else if (hash.startsWith('post/')) {
-                // Handle deep links like #post/80-20-career-growth
-                const slug = hash.split('/')[1];
-                const post = blogData.find(p => p.slug === slug);
-                if (post) {
-                    navigate('post', post.id);
-                } else {
-                    navigate('home'); // Fallback
-                }
-            } else if (['about', 'contact'].includes(hash)) {
-                navigate(hash);
+        // ===== ABOUT MODAL =====
+        function openAboutSection() {
+            closeSideMenu();
+            const backdrop = document.getElementById('about-modal-backdrop');
+            const modal = document.getElementById('about-modal');
+            backdrop.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            requestAnimationFrame(() => { backdrop.classList.add('opacity-100'); modal.classList.add('opacity-100'); modal.classList.remove('scale-95'); modal.classList.add('scale-100'); });
+        }
+        function closeAboutSection() {
+            const backdrop = document.getElementById('about-modal-backdrop');
+            const modal = document.getElementById('about-modal');
+            backdrop.classList.remove('opacity-100');
+            modal.classList.remove('opacity-100','scale-100');
+            modal.classList.add('scale-95');
+            document.body.classList.remove('overflow-hidden');
+            setTimeout(() => { backdrop.classList.add('hidden'); modal.classList.add('hidden'); }, 400);
+        }
+
+        // ===== CONFETTI =====
+        function triggerConfetti() {
+            if (typeof confetti !== 'function') return;
+            const dur = 3 * 1000, end = Date.now() + dur;
+            const defaults = { startVelocity:30, spread:360, ticks:60, zIndex:110 };
+            const rng = (min,max) => Math.random()*(max-min)+min;
+            const interval = setInterval(() => {
+                const left = end - Date.now(); if (left <= 0) return clearInterval(interval);
+                const count = 50*(left/dur);
+                confetti({...defaults, particleCount:count, origin:{x:rng(0.1,0.3), y:Math.random()-0.2}});
+                confetti({...defaults, particleCount:count, origin:{x:rng(0.7,0.9), y:Math.random()-0.2}});
+            }, 250);
+        }
+
+        // ===== HOLIDAY LIST MODAL =====
+        function openHolidayListModal(type) {
+            const backdrop = document.getElementById('holiday-list-backdrop');
+            const modal = document.getElementById('holiday-list-modal');
+            const title = document.getElementById('hlist-title');
+            const subtitle = document.getElementById('hlist-subtitle');
+            const listEl = document.getElementById('hlist-body');
+            const dotEl = document.getElementById('hlist-dot');
+            const isGH = type === 'GH';
+            const color = isGH ? '#ff3b30' : '#32ade6';
+            const darkColor = isGH ? '#ff6961' : '#64d2ff';
+            const staticHolidays = (isGH ? gh : rh).filter(h => new Date(h.date).getFullYear() === displayYear);
+            const customEntries = Object.values(customHolidays).filter(h => h.type === type && h.date && new Date(h.date).getFullYear() === displayYear);
+            const mergedMap = {};
+            staticHolidays.forEach(h => { mergedMap[h.date] = h; });
+            customEntries.forEach(h => { mergedMap[h.date] = { date:h.date, name:h.name, description:h.description }; });
+            Object.values(customHolidays).forEach(h => { if (h.type === 'NONE' && h.date && mergedMap[h.date]) delete mergedMap[h.date]; });
+            const holidays = Object.values(mergedMap);
+            title.textContent = isGH ? '🔴 Gazetted Holidays' : '🔵 Restricted Holidays';
+            subtitle.textContent = holidays.length + ' holidays · ' + displayYear;
+            dotEl.style.background = color;
+            const sorted = [...holidays].sort((a,b) => new Date(a.date)-new Date(b.date));
+            const byMonth = {};
+            sorted.forEach(h => {
+                const d = new Date(h.date);
+                const key = d.getFullYear()+'-'+d.getMonth();
+                if (!byMonth[key]) byMonth[key] = { label: monthNames[d.getMonth()]+' '+d.getFullYear(), items: [] };
+                byMonth[key].items.push(h);
+            });
+            const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            let html = '';
+            if (sorted.length === 0) {
+                html = `<div class="flex flex-col items-center justify-center py-14 gap-3 text-center"><span class="text-5xl opacity-30">${isGH?'🔴':'🔵'}</span><p class="text-sm font-black text-slate-500 dark:text-slate-400">No holidays found</p></div>`;
             } else {
-                 navigate('home'); // Default to home if hash is invalid
+                Object.values(byMonth).forEach(group => {
+                    html += `<div class="mb-4"><div class="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2 px-1" style="color:${color}">${group.label}</div><div class="flex flex-col gap-1.5">`;
+                    group.items.forEach(h => {
+                        const d = new Date(h.date+'T00:00:00');
+                        html += `<div class="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 backdrop-blur-md shadow-sm hover:scale-[1.01] transition-transform">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center text-white font-black shadow-md" style="background:linear-gradient(135deg,${color},${darkColor})">
+                                <span class="text-[8px] uppercase tracking-wider opacity-90">${dayNames[d.getDay()]}</span>
+                                <span class="text-base leading-none">${d.getDate()}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-black text-xs text-slate-900 dark:text-white truncate">${h.name}</div>
+                                <div class="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5 truncate">${h.description}</div>
+                            </div>
+                            <span class="flex-shrink-0 text-[7px] font-black uppercase px-2 py-1 rounded-full text-white" style="background:${color}">${type}</span>
+                        </div>`;
+                    });
+                    html += '</div></div>';
+                });
+            }
+            listEl.innerHTML = html;
+            backdrop.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            requestAnimationFrame(() => { backdrop.classList.add('opacity-100'); modal.classList.add('opacity-100'); modal.classList.remove('scale-95'); modal.classList.add('scale-100'); });
+        }
+
+        function closeHolidayListModal() {
+            const backdrop = document.getElementById('holiday-list-backdrop');
+            const modal = document.getElementById('holiday-list-modal');
+            backdrop.classList.remove('opacity-100');
+            modal.classList.remove('opacity-100','scale-100');
+            modal.classList.add('scale-95');
+            document.body.classList.remove('overflow-hidden');
+            setTimeout(() => { backdrop.classList.add('hidden'); modal.classList.add('hidden'); }, 400);
+        }
+
+        // ===== SWIPE =====
+        let touchStartX = 0, touchEndX = 0, touchStartY = 0, touchEndY = 0;
+        function handleSwipeGestures() {
+            const swipeZone = document.getElementById('calendar-swipe-zone');
+            if (!swipeZone) return;
+            swipeZone.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, {passive:true});
+            swipeZone.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; touchEndY = e.changedTouches[0].screenY; handleSwipe(); }, {passive:true});
+        }
+        function handleSwipe() {
+            let dx = touchEndX - touchStartX, dy = touchEndY - touchStartY;
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                if (dx < 0) nextMonth(); else prevMonth();
             }
         }
 
+        // ===== KEYBOARD =====
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closeModal(); closeImageExpander(); closeSideMenu(); closeAboutSection(); closeHolidayListModal(); }
+            if (e.key === 'ArrowLeft') prevMonth();
+            if (e.key === 'ArrowRight') nextMonth();
+        });
 
-        // Start the application
-        initializeApp();
+        // ===== INIT =====
+        function initSettings() {
+            updateThemePills();
+            // Cal type
+            setCalType(calType);
+            // Week start
+            const ws = document.getElementById('week-start-toggle');
+            if (ws) { ws.checked = weekStartSun; document.getElementById('week-start-label').textContent = weekStartSun ? 'Sunday' : 'Monday'; }
+            // Panchang
+            const pt = document.getElementById('panchang-toggle');
+            if (pt) pt.checked = showPanchang;
+            // Animations
+            const at = document.getElementById('animation-toggle');
+            if (at) at.checked = animationsOn;
+            // Weekend
+            const wt = document.getElementById('weekend-toggle');
+            if (wt) wt.checked = weekendHighlight;
+        }
 
+        window.onload = () => {
+            populateYearPicker();
+            initSettings();
+            if (weekStartSun) updateDayHeaders();
+            fetchHolidays();
+            handleSwipeGestures();
+            syncDrawerDarkMode();
+        };
     </script>
 </body>
 </html>
