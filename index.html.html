@@ -1,494 +1,1600 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nvn Arya Blog - Insights from a Working Professional</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        /* Custom Tailwind Configuration */
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary-dark': '#111827', /* Dark Grey/Black for background */
-                        'primary-light': '#F9FAFB', /* Light Grey for cards */
-                        'accent-blue': '#1D4ED8', /* Deep Blue for accents */
-                        'accent-teal': '#14B8A6', /* Red for highlights */
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    boxShadow: {
-                        '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.3)',
-                    }
-                }
-            }
-        }
-        /* Ensure smooth scrolling when hash changes */
-        html { scroll-behavior: smooth; }
-        .page-content {
-            min-height: calc(100vh - 128px); /* Full height minus header and footer */
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .page-content.active {
-            opacity: 1;
-        }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Annual GH RH Calendar</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Firebase Compat SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800;900&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+<style>
+  :root {
+    --bg-gradient: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 100%);
+    --glass-bg: rgba(255,255,255,0.4);
+    --glass-border: rgba(255,255,255,0.5);
+    --glass-shadow: rgba(255,255,255,0.6);
+    --glass-blur: blur(12px); /* Reduced blur for better mobile performance */
+    --text-primary: #1a1a2e;
+    --text-secondary: #4a4a6a;
+    --today-grad: linear-gradient(135deg,#22c55e,#16a34a);
+    --wknd-color: #f97316;
+  }
+  html.dark {
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    --glass-bg: rgba(15,23,42,0.6);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-shadow: rgba(255,255,255,0.05);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+  body{
+    font-family:'DM Sans',sans-serif;
+    color:var(--text-primary);
+    background: var(--bg-gradient);
+    min-height:100vh;
+    overflow-x:hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+  
+  /* Glassmorphism - Optimized */
+  .glass-panel{
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    box-shadow:0 8px 32px rgba(0,0,0,0.05);
+  }
+  .glass-button{
+    background:var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border:1px solid var(--glass-border);
+    box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    cursor:pointer;
+    transition:transform 0.15s, background 0.2s;
+    color:var(--text-primary);
+  }
+  .glass-button:hover{transform:translateY(-2px);}
+  .glass-button:active{transform:scale(0.95);}
+  
+  /* Initial Splash Loader */
+  #splash-screen {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg-gradient);
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 4px solid rgba(124,58,237,0.3);
+    border-top-color: #7c3aed; border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+
+  /* Main content hidden initially */
+  #auth-screen, #app-wrapper { display: none; }
+  
+  #app{position:relative;z-index:1;min-height:100vh;padding:0 0 40px;}
+  
+  /* Authentication Screen */
+  #auth-screen {
+    position: fixed; inset: 0; z-index: 1000;
+    align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px);
+    overflow-y: auto; padding: 20px 0;
+  }
+  .auth-box {
+    width: 90%; max-width: 400px; padding: 30px; border-radius: 24px;
+    text-align: center; margin: auto; background: var(--bg-gradient);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  }
+  .auth-input, .auth-select {
+    width: 100%; padding: 12px 16px; border-radius: 12px;
+    background: rgba(0,0,0,0.05); border: 1px solid var(--glass-border);
+    color: var(--text-primary); font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; outline: none; margin-bottom: 12px; transition: 0.3s;
+  }
+  html.dark .auth-input, html.dark .auth-select { background: rgba(255,255,255,0.05); }
+  .auth-input:focus, .auth-select:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.2); }
+  .auth-btn-main {
+    width: 100%; padding: 12px; border-radius: 12px; border: none; cursor: pointer;
+    background: linear-gradient(135deg,#7c3aed,#ec4899); color: #fff;
+    font-size: 1.05rem; font-weight: 700; transition: all 0.2s; margin-top: 10px;
+  }
+  .auth-btn-main:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,0.4); }
+  
+  .reg-fields { display: none; }
+  .reg-row { display: flex; gap: 10px; }
+  .input-label { display: block; text-align: left; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-secondary); }
+
+  /* Header */
+  #header{
+    position:sticky;top:0;z-index:50;
+    padding:12px 20px 10px;
+  }
+  .header-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    max-width:900px;margin:0 auto;
+  }
+  .title-block{text-align:center;flex:1;}
+  .title-main{
+    font-family:'Playfair Display',serif;
+    font-size:1.9rem;font-weight:900;
+    background:linear-gradient(135deg,#7c3aed,#ec4899,#f97316);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    line-height:1.1;
+  }
+  .title-sub{font-size:0.72rem;color:var(--text-secondary);letter-spacing:0.08em;margin-top:2px;}
+  .gh-rh-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;
+    background:linear-gradient(135deg,rgba(239,68,68,0.1),rgba(59,130,246,0.1));
+    border:1px solid rgba(139,92,246,0.2);color:var(--text-secondary);margin-top:4px;
+  }
+  
+  /* Legend Filter Buttons */
+  .legend-row{
+    display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+    padding:8px 20px;max-width:900px;margin:0 auto;
+  }
+  .legend-btn{
+    padding:5px 14px;border-radius:20px;font-size:0.72rem;font-weight:600;
+    border:none;cursor:pointer;transition:all 0.2s;
+    display:flex;align-items:center;gap:5px;
+  }
+  .legend-btn.wknd{background:rgba(249,115,22,0.15);color:#ea580c;border:1px solid rgba(249,115,22,0.3);}
+  .legend-btn.gh{background:rgba(239,68,68,0.15);color:#dc2626;border:1px solid rgba(239,68,68,0.3);}
+  .legend-btn.rh{background:rgba(59,130,246,0.15);color:#2563eb;border:1px solid rgba(59,130,246,0.3);}
+  .legend-btn:hover{transform:scale(1.05);}
+  
+  /* Navigation */
+  .nav-row{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    padding:8px 20px;max-width:900px;margin:0 auto;
+  }
+  .nav-arrow{
+    width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.1rem;border:none;
+  }
+  .month-year-selects{display:flex;gap:8px;}
+  .month-year-selects select{
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    color:var(--text-primary);
+    padding:6px 12px;border-radius:12px;
+    font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:600;
+    cursor:pointer;outline:none;
+    -webkit-appearance:none;appearance:none;
+  }
+  
+  /* Calendar Grid */
+  #calendar-container{
+    max-width:900px;margin:0 auto;padding:0 12px;
+    overflow:hidden; /* crucial for swipe */
+  }
+  
+  .day-headers{
+    display:grid;grid-template-columns:repeat(7,1fr);
+    gap:4px;padding:0 4px;margin-bottom:4px;
+  }
+  .day-header{
+    text-align:center;padding:6px 2px;
+    font-size:0.75rem;font-weight:700;letter-spacing:0.06em;
+    color:var(--text-secondary);text-transform:uppercase;
+  }
+  .day-header.weekend-header{color:var(--wknd-color);}
+  
+  .cal-grid{
+    display:grid;grid-template-columns:repeat(7,1fr);
+    gap:4px;padding:4px;
+    border-radius:20px;
+  }
+  .cal-cell{
+    border-radius:14px;padding:7px 4px 6px;
+    min-height:75px;cursor:pointer;position:relative;
+    transition:transform 0.15s cubic-bezier(.4,0,.2,1); /* Optimized transition */
+    display:flex;flex-direction:column;align-items:center;
+    border:1px solid transparent;
+    user-select:none;
+  }
+  .cal-cell:active{transform:scale(0.95);}
+  .cal-cell.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none;}
+  .cal-cell.regular{background:var(--glass-bg);border-color:var(--glass-border);}
+  
+  /* STATIC STYLING FOR GH/RH/BDAY (Removed heavy glow animations) */
+  .cal-cell.gh-cell {
+    background: rgba(239,68,68,0.1); 
+    border-color: rgba(239,68,68,0.35);
+  }
+  .cal-cell.rh-cell {
+    background: rgba(59,130,246,0.1); 
+    border-color: rgba(59,130,246,0.35);
+  }
+  .cal-cell.bday-cell {
+    background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(245,158,11,0.15));
+    border-color: rgba(236,72,153,0.4);
+  }
+  html.dark .cal-cell.gh-cell { background: rgba(239,68,68,0.2); }
+  html.dark .cal-cell.rh-cell { background: rgba(59,130,246,0.2); }
+
+  .cal-cell.today-cell{
+    background:var(--today-grad);border-color:rgba(34,197,94,0.5);
+    box-shadow:0 4px 12px rgba(34,197,94,0.3);
+  }
+  .cal-cell.today-cell .day-num{color:#fff!important;}
+  .cal-cell.today-cell .holiday-name{color:rgba(255,255,255,0.9)!important;}
+  
+  /* ENHANCED DATE FONT */
+  .day-num{
+    font-family:'DM Sans',sans-serif;
+    font-size:1.5rem; font-weight:800; line-height:1;
+    color:var(--text-primary);
+  }
+  .cal-cell.gh-cell .day-num{color:#dc2626;}
+  .cal-cell.rh-cell .day-num{color:#2563eb;}
+  .cal-cell.weekend .day-num{color:var(--wknd-color);}
+  
+  .holiday-name{
+    font-size:0.6rem;font-weight:600;text-align:center;
+    margin-top:4px;line-height:1.2;
+    color:var(--text-secondary);
+    max-height:2.4em;overflow:hidden;
+  }
+  .cal-cell.gh-cell .holiday-name{color:#ef4444;}
+  .cal-cell.rh-cell .holiday-name{color:#3b82f6;}
+  .cal-cell.bday-cell .holiday-name{color:#ec4899; font-weight:800;}
+  
+  .special-dot{
+    width:6px;height:6px;border-radius:50%;
+    position:absolute;bottom:5px;left:50%;transform:translateX(-50%);
+  }
+  
+  /* Jump to Today */
+  #jump-today{
+    display:flex;justify-content:center;padding:16px 20px;
+    max-width:900px;margin:0 auto;
+  }
+  #jumpTodayBtn{
+    padding:10px 28px;border-radius:30px;
+    font-size:0.85rem;font-weight:600;border:none;
+    background:linear-gradient(135deg,#22c55e,#16a34a);
+    color:#fff;box-shadow:0 4px 12px rgba(34,197,94,0.3);
+    cursor:pointer;transition:all 0.2s;
+    display:flex;align-items:center;gap:7px;
+  }
+  #jumpTodayBtn:active{transform:scale(0.96);}
+  
+  /* Footer */
+  #footer{text-align:center;padding:8px;font-size:0.8rem;font-weight:700;color:var(--text-secondary); letter-spacing: 0.05em;}
+  
+  /* Sidebar */
+  #sidebar-overlay{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);
+    opacity:0;pointer-events:none;transition:opacity 0.3s;
+  }
+  #sidebar-overlay.open{opacity:1;pointer-events:all;}
+  #sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:300px;z-index:201;
+    padding:24px 16px;overflow-y:auto;
+    transform:translateX(-100%);
+    transition:transform 0.35s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;gap:16px;
+    background: var(--bg-gradient); border-right: 1px solid var(--glass-border);
+  }
+  #sidebar.open{transform:translateX(0);}
+  .sidebar-section{padding:14px;border-radius:16px;}
+  .sidebar-section h3{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-secondary);margin-bottom:10px;}
+  .quick-link{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border-radius:12px;cursor:pointer;
+    transition:background 0.2s;font-size:0.88rem;font-weight:600;
+    color:var(--text-primary);
+  }
+  .quick-link:hover{background:rgba(139,92,246,0.12);}
+  .quick-link .icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+  
+  /* Toggle Switch */
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;}
+  .toggle-label{font-size:0.85rem;font-weight:600;color:var(--text-primary);}
+  .toggle{position:relative;width:44px;height:24px;}
+  .toggle input{opacity:0;width:0;height:0;position:absolute;}
+  .slider{
+    position:absolute;inset:0;border-radius:12px;
+    background:rgba(156,163,175,0.4);transition:0.3s;cursor:pointer;
+  }
+  .slider:before{
+    content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;
+    background:#fff;border-radius:50%;transition:0.3s;
+    box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  }
+  input:checked+.slider{background:linear-gradient(135deg,#7c3aed,#ec4899);}
+  input:checked+.slider:before{transform:translateX(20px);}
+  
+  /* Pill Buttons */
+  .pill-group{display:flex;gap:4px;background:rgba(0,0,0,0.06);padding:3px;border-radius:12px;}
+  html.dark .pill-group{background:rgba(255,255,255,0.06);}
+  .pill-btn{
+    padding:5px 12px;border-radius:9px;border:none;
+    font-size:0.78rem;font-weight:600;cursor:pointer;
+    transition:all 0.2s;color:var(--text-secondary);background:transparent;
+  }
+  .pill-btn.active{
+    background:#fff;color:#7c3aed;
+    box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  }
+  html.dark .pill-btn.active{background:rgba(139,92,246,0.3);color:#f8fafc;}
+  
+  /* Modals */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:300;
+    background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;padding:16px;
+    opacity:0;pointer-events:none;transition:opacity 0.25s;
+    overscroll-behavior:contain;
+  }
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal-box{
+    width:100%;max-width:480px;max-height:90vh;
+    border-radius:24px;overflow:hidden;
+    display:flex;flex-direction:column;
+    background: var(--bg-gradient);
+    transform:translateY(20px);
+    transition:transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  .modal-overlay.open .modal-box{transform:translateY(0);}
+  .modal-header{padding:20px 20px 16px;flex-shrink:0;}
+  .modal-body{padding:0 20px 20px;overflow-y:auto;flex:1;overscroll-behavior:contain;}
+  .modal-header h2{
+    font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:#fff;
+  }
+  .modal-header .date-sub{font-size:0.8rem;opacity:0.85;color:#fff;margin-top:2px;}
+  .modal-close{
+    position:absolute;top:14px;right:14px;
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(255,255,255,0.2);border:none;
+    color:#fff;font-size:1.1rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background 0.2s;
+  }
+  .modal-close:active{background:rgba(255,255,255,0.35); transform:scale(0.9);}
+  
+  /* Section Cards inside modal */
+  .info-card{border-radius:14px;padding:14px;margin-bottom:12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.02);}
+  html.dark .info-card{background: rgba(255,255,255,0.02);}
+  .info-card h4{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin-bottom:8px;}
+  
+  /* Notes Textarea */
+  .notes-textarea{
+    width:100%;min-height:80px;border-radius:12px;
+    background:rgba(0,0,0,0.04);border:1px solid var(--glass-border);
+    color:var(--text-primary);padding:10px 12px;
+    font-family:'DM Sans',sans-serif;font-size:0.88rem;resize:vertical;outline:none;
+    transition:border-color 0.2s;
+  }
+  html.dark .notes-textarea{background:rgba(255,255,255,0.05);}
+  .notes-textarea:focus{border-color:rgba(139,92,246,0.5);}
+  .save-btn{
+    padding:8px 20px;border-radius:10px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;
+    font-size:0.85rem;font-weight:600;transition:all 0.2s;
+    display:flex;align-items:center;gap:6px;
+  }
+  .save-btn:active{transform:scale(0.95);}
+  .save-status{font-size:0.78rem;font-weight:600;color:#22c55e;opacity:0;transition:opacity 0.3s;}
+  .save-status.visible{opacity:1;}
+  
+  /* UPGRADED HOLIDAY LIST UI */
+  .holiday-timeline{display:flex;flex-direction:column;gap:0;}
+  .month-group{margin-bottom:20px;}
+  .month-label{
+    font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 800; 
+    color: var(--text-primary); padding: 8px 0; 
+    border-bottom: 2px solid var(--glass-border); margin-bottom: 12px;
+  }
+  .holiday-item {
+    display: flex; align-items: center; gap: 14px; padding: 12px 10px;
+    border-radius: 12px; background: rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.05); margin-bottom: 8px;
+    transition: background 0.2s; cursor: pointer;
+  }
+  html.dark .holiday-item { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); }
+  .holiday-item:active { background: rgba(0,0,0,0.08); transform: scale(0.98); }
+  html.dark .holiday-item:active { background: rgba(255,255,255,0.1); }
+  
+  .h-date-badge {
+    min-width: 52px; text-align: center; padding: 8px 6px; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-weight: 800; font-size: 1.1rem;
+    flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+  .h-name { font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-bottom: 2px; }
+  .h-desc { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); line-height: 1.3;}
+  
+  /* Profile Custom CSS */
+  .profile-pic-container {
+    position: relative; width: 100px; height: 100px; margin: 0 auto 15px; cursor: pointer;
+  }
+  .profile-pic {
+    width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    border: 3px solid rgba(124,58,237,0.5);
+  }
+  .profile-pic-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.5); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: white;
+    font-size: 0.8rem; opacity: 0; transition: opacity 0.2s;
+  }
+  .profile-pic-container:hover .profile-pic-overlay { opacity: 1; }
+
+  /* Family Birthdays List */
+  .f-bday-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(0,0,0,0.03); padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;
+  }
+  html.dark .f-bday-item { background: rgba(255,255,255,0.05); }
+
+  /* Admin Editor */
+  .admin-editor-panel {
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.4);
+    border-radius: 12px; padding: 12px; margin-top: 15px;
+  }
+
+  /* BIRTHDAY OVERLAY CELEBRATION */
+  #bday-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    text-align: center; color: white;
+  }
+  #bday-overlay.open { opacity: 1; pointer-events: all; }
+  .bday-title {
+    font-family: 'Playfair Display', serif; font-size: 3.5rem; font-weight: 900;
+    background: linear-gradient(135deg, #fcd34d, #f59e0b, #ec4899);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: bdayBounce 1s infinite alternate; margin-bottom: 10px;
+  }
+  .bday-subtitle { font-size: 1.2rem; font-weight: 600; opacity: 0.9; margin-bottom: 30px; }
+  @keyframes bdayBounce { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
+  
+  @media(max-width:480px){
+    .title-main{font-size:1.5rem;}
+    .cal-cell{min-height:60px;padding:5px 2px 5px;}
+    .day-num{font-size:1.3rem;} 
+    .holiday-name{font-size:0.55rem;}
+    .modal-box{border-radius:20px;}
+    #sidebar{width:280px;}
+    .bday-title { font-size: 2.5rem; }
+  }
+</style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800">
+<body>
 
-    <!-- Header and Navigation (Fixed) -->
-    <header class="sticky top-0 z-50 bg-primary-dark shadow-lg">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-            <!-- Logo/Title -->
-            <a href="#home" onclick="navigate('home')" class="text-2xl font-extrabold text-white tracking-tight hover:text-accent-teal transition duration-300 rounded-lg p-2">
-                NVN ARYA <span class="text-accent-blue">BLOG</span>
-            </a>
+<!-- Splash Loader (Prevents Login Screen Flash) -->
+<div id="splash-screen">
+  <div class="spinner"></div>
+  <div style="margin-top: 15px; font-weight: 700; color: var(--text-secondary);">Loading...</div>
+</div>
 
-            <!-- Desktop Navigation -->
-            <nav class="hidden md:flex space-x-6">
-                <a href="#home" onclick="navigate('home')" class="text-white hover:text-accent-teal font-semibold px-3 py-2 rounded-lg transition duration-300">Home</a>
-                <a href="#about" onclick="navigate('about')" class="text-white hover:text-accent-teal font-semibold px-3 py-2 rounded-lg transition duration-300">About Me</a>
-                <a href="#contact" onclick="navigate('contact')" class="text-white hover:text-accent-teal font-semibold px-3 py-2 rounded-lg transition duration-300">Contact</a>
-            </nav>
+<!-- Special Birthday Celebration Overlay -->
+<div id="bday-overlay">
+  <div style="font-size: 5rem; margin-bottom: 10px;">🎂</div>
+  <div class="bday-title" id="bday-msg">Happy Birthday!</div>
+  <div class="bday-subtitle">May all your wishes come true today! 🎉✨</div>
+  <button class="save-btn" style="background: white; color: #ec4899; font-size: 1.1rem; padding: 12px 30px; border-radius: 30px;" onclick="closeBirthdayOverlay()">Thank You! 🎈</button>
+</div>
 
-            <!-- Mobile Menu Button (Hamburger) -->
-            <button id="mobile-menu-button" class="md:hidden text-white focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
+<!-- Authentication Screen -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h2 id="auth-title" style="font-family:'Playfair Display',serif; font-size:2rem; font-weight:800; color:var(--text-primary); margin-bottom: 5px;">Welcome Back</h2>
+    <p id="auth-subtitle" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom: 20px;">Please login to view calendar</p>
+    
+    <input type="email" id="auth-email" class="auth-input" placeholder="Enter Email Address"/>
+    
+    <!-- Registration Only Fields -->
+    <div class="reg-fields">
+      <div class="reg-row">
+        <div>
+          <span class="input-label">First Name</span>
+          <input type="text" id="auth-fname" class="auth-input" placeholder="First Name"/>
         </div>
-
-        <!-- Mobile Menu (Dropdown) -->
-        <div id="mobile-menu" class="hidden md:hidden bg-gray-900 border-t border-gray-700">
-            <a href="#home" onclick="navigate('home'); toggleMobileMenu()" class="block text-white hover:bg-gray-700 px-4 py-3 font-medium">Home</a>
-            <a href="#about" onclick="navigate('about'); toggleMobileMenu()" class="block text-white hover:bg-gray-700 px-4 py-3 font-medium">About Me</a>
-            <a href="#contact" onclick="navigate('contact'); toggleMobileMenu()" class="block text-white hover:bg-gray-700 px-4 py-3 font-medium">Contact</a>
+        <div>
+          <span class="input-label">Last Name</span>
+          <input type="text" id="auth-lname" class="auth-input" placeholder="Last Name"/>
         </div>
-    </header>
+      </div>
+      <div>
+        <span class="input-label">Gender</span>
+        <select id="auth-gender" class="auth-select">
+          <option value="" disabled selected>Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <span class="input-label">Mobile No.</span>
+        <input type="tel" id="auth-mobile" class="auth-input" placeholder="Enter Mobile Number"/>
+      </div>
+      <div>
+        <span class="input-label">Date of Birth (For Special Wishes!)</span>
+        <input type="date" id="auth-dob" class="auth-input"/>
+      </div>
+    </div>
 
-    <!-- Main Content Area -->
-    <main id="app" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8"></main>
+    <input type="password" id="auth-password" class="auth-input" placeholder="Enter Password"/>
+    
+    <button onclick="handleAuth()" class="auth-btn-main" id="auth-btn">Login</button>
+    
+    <div style="margin-top: 15px; font-size: 0.85rem;" id="forgot-pass-wrap">
+      <a href="#" onclick="forgotPassword()" style="color: #ef4444; font-weight: 600; text-decoration: none;">Forgot Password?</a>
+    </div>
+
+    <div style="margin-top: 10px; font-size: 0.85rem; color:var(--text-primary);">
+      <span id="auth-toggle-text">Don't have an account?</span>
+      <a href="#" onclick="toggleAuthMode()" style="color: #7c3aed; font-weight: 700; text-decoration: none;">Create Account</a>
+    </div>
+    <div id="auth-error" style="color: #ef4444; margin-top: 12px; font-size: 0.8rem; font-weight:600;"></div>
+    <div id="auth-success" style="color: #22c55e; margin-top: 12px; font-size: 0.8rem; font-weight:600;"></div>
+  </div>
+</div>
+
+<!-- Main App Wrapper -->
+<div id="app-wrapper">
+  
+  <!-- Sidebar Overlay -->
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <div id="sidebar" class="glass-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:800;color:var(--text-primary);">Menu</span>
+      <button onclick="closeSidebar()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);">✕</button>
+    </div>
+
+    <!-- User Profile Quick Link -->
+    <div class="sidebar-section glass-panel" style="padding:14px; margin-bottom:10px; border-radius:16px; cursor:pointer;" onclick="openProfileModal(); closeSidebar();">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img id="sidebarProfilePic" src="https://ui-avatars.com/api/?name=User&background=7c3aed&color=fff" style="width:45px; height:45px; border-radius:50%; object-fit:cover; border:2px solid #7c3aed;">
+        <div>
+          <div id="sidebarProfileName" style="font-weight:700; font-size:0.95rem; color:var(--text-primary);">User</div>
+          <div style="font-size:0.75rem; color:var(--text-secondary);">View My Profile</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="sidebar-section glass-panel">
+      <h3>Quick Links</h3>
+      <div class="quick-link" onclick="openGHModal();closeSidebar()">
+        <div class="icon" style="background:rgba(239,68,68,0.15);">🏛️</div>
+        <span>Gazetted Holidays (GH)</span>
+      </div>
+      <div class="quick-link" onclick="openRHModal();closeSidebar()">
+        <div class="icon" style="background:rgba(59,130,246,0.15);">📋</div>
+        <span>Restricted Holidays (RH)</span>
+      </div>
+      <div class="quick-link" onclick="jumpToToday();closeSidebar()">
+        <div class="icon" style="background:rgba(34,197,94,0.15);">📅</div>
+        <span>Jump to Today</span>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="sidebar-section glass-panel">
+      <h3>Settings</h3>
+
+      <div class="toggle-row">
+        <span class="toggle-label">🎨 Theme</span>
+        <div class="pill-group" id="themeGroup">
+          <button class="pill-btn" onclick="setTheme('system')" data-t="system">Auto</button>
+          <button class="pill-btn" onclick="setTheme('light')" data-t="light">🔆</button>
+          <button class="pill-btn" onclick="setTheme('dark')" data-t="dark">🌙</button>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">📆 Week Starts</span>
+        <div class="pill-group" id="weekStartGroup">
+          <button class="pill-btn" onclick="setWeekStart('sun')" data-ws="sun">Sun</button>
+          <button class="pill-btn" onclick="setWeekStart('mon')" data-ws="mon">Mon</button>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">✨ Animations</span>
+        <label class="toggle"><input type="checkbox" id="toggleAnimations" checked onchange="saveSetting('animations',this.checked)"/><span class="slider"></span></label>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">🟠 Weekend Highlight</span>
+        <label class="toggle"><input type="checkbox" id="toggleWeekend" checked onchange="saveSetting('weekend',this.checked);renderCalendar()"/><span class="slider"></span></label>
+      </div>
+
+      <button onclick="logout()" style="width:100%; margin-top:20px; padding:10px; border-radius:12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#dc2626; font-weight:700; cursor:pointer;">
+        🚪 Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App Content -->
+  <div id="app">
+    <!-- Header -->
+    <div id="header" class="glass-panel" style="border-radius:0 0 20px 20px;">
+      <div class="header-inner">
+        <button class="glass-button" onclick="openSidebar()" style="width:40px;height:40px;border-radius:12px;font-size:1.1rem;flex-shrink:0;">☰</button>
+        <div class="title-block">
+          <div class="title-main">Calendar</div>
+          <div class="title-sub" id="userEmailDisplay">Govt. Holidays</div>
+          <div class="gh-rh-badge">🇮🇳 GH &amp; RH</div>
+        </div>
+        <button class="glass-button" id="darkToggleBtn" onclick="cycleDarkMode()" style="width:40px;height:40px;border-radius:12px;font-size:1.1rem;flex-shrink:0;">🌙</button>
+      </div>
+    </div>
+
+    <!-- Legend Filters -->
+    <div class="legend-row">
+      <button class="legend-btn wknd">🟠 Weekends</button>
+      <button class="legend-btn gh" onclick="openGHModal()">🔴 GH <span style="opacity:0.7;font-size:0.65rem;">→ View List</span></button>
+      <button class="legend-btn rh" onclick="openRHModal()">🔵 RH <span style="opacity:0.7;font-size:0.65rem;">→ View List</span></button>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-row">
+      <button class="nav-arrow glass-button" onclick="changeMonth(-1)">‹</button>
+      <div class="month-year-selects">
+        <select id="monthSelect" onchange="onMonthYearChange()"></select>
+        <select id="yearSelect" onchange="onMonthYearChange()"></select>
+      </div>
+      <button class="nav-arrow glass-button" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <!-- Calendar -->
+    <div id="calendar-container">
+      <div class="calendar-wrapper" id="calWrapper">
+        <div class="day-headers" id="dayHeaders"></div>
+        <div class="cal-grid glass-panel" id="calGrid"></div>
+      </div>
+    </div>
+
+    <!-- Jump to Today -->
+    <div id="jump-today">
+      <button id="jumpTodayBtn" onclick="jumpToToday()">
+        <span>📍</span> Jump to Today
+      </button>
+    </div>
 
     <!-- Footer -->
-    <footer class="bg-primary-dark mt-12">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-white text-center">
-            <p>&copy; <span id="current-year"></span> Navin Arya Blog. All rights reserved.</p>
-            <div class="mt-2 text-sm text-gray-400">
-                <span class="mr-4">Location: Jaipur</span> |
-                <span class="mx-4">Mobile: 9928294545</span> |
-                <span class="ml-4">Email: navinarya.786@gmail.com</span>
-            </div>
-            <p class="text-xs mt-1 text-gray-500">Working Professional's Insights & Analysis</p>
+    <div id="footer">
+      <span>Central Govt. GH & RH Holidays</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== PROFILE MODAL ===== -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-box glass-panel" style="position:relative; max-width:400px;">
+    <div class="modal-header" style="background: linear-gradient(135deg,#7c3aed,#ec4899);">
+      <button class="modal-close" onclick="closeProfileModal()">✕</button>
+      <h2 style="color:white;">My Profile</h2>
+    </div>
+    <div class="modal-body" style="padding-top: 20px;">
+      
+      <!-- Profile Picture -->
+      <div class="profile-pic-container" onclick="document.getElementById('profilePicInput').click()">
+        <img id="modalProfilePic" src="https://ui-avatars.com/api/?name=User&background=7c3aed&color=fff" class="profile-pic" alt="Profile">
+        <div class="profile-pic-overlay">Change</div>
+      </div>
+      <input type="file" id="profilePicInput" accept="image/*" style="display:none;" onchange="uploadProfilePic(event)">
+      
+      <!-- User Data -->
+      <label style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">First Name</label>
+      <input type="text" id="profileFnameInput" class="auth-input" style="margin-top:5px; margin-bottom:8px;" placeholder="First Name">
+      
+      <label style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Last Name</label>
+      <input type="text" id="profileLnameInput" class="auth-input" style="margin-top:5px; margin-bottom:8px;" placeholder="Last Name">
+
+      <label style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Date of Birth</label>
+      <input type="date" id="profileDobInput" class="auth-input" style="margin-top:5px; margin-bottom:8px;">
+
+      <label style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Email</label>
+      <input type="email" id="profileEmailInput" class="auth-input" style="margin-top:5px; opacity:0.6; cursor:not-allowed;" disabled>
+
+      <button class="save-btn" style="width:100%; justify-content:center; margin-top:5px;" onclick="saveProfileData()">💾 Save My Details</button>
+      <div id="profileSaveStatus" class="save-status" style="text-align:center; margin-top:5px;">✅ Updated Successfully!</div>
+
+      <!-- FAMILY BIRTHDAYS SECTION -->
+      <div style="margin-top: 25px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+        <h3 style="font-size:0.95rem; font-weight:800; color:var(--text-primary); margin-bottom:10px;">🎉 Family & Friends Birthdays</h3>
+        
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input type="text" id="fbName" class="auth-input" style="margin-bottom:0; flex:1;" placeholder="Name">
+          <input type="date" id="fbDob" class="auth-input" style="margin-bottom:0; flex:1;">
         </div>
-    </footer>
+        <button class="save-btn" style="width:100%; justify-content:center; background:linear-gradient(135deg, #10b981, #059669);" onclick="addFamilyBirthday()">➕ Add Birthday</button>
 
-    <!-- JavaScript for SPA Logic and Content -->
-    <script>
-        const app = document.getElementById('app');
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
+        <div id="familyBdaysList" style="margin-top:15px; max-height: 120px; overflow-y: auto;">
+          <!-- Items injected here via JS -->
+        </div>
+      </div>
 
-        // --- Data Layer (The 10 Pages of Content) ---
-        const navinDetails = {
-            name: "Navin Arya",
-            role: "Working Professional",
-            location: "Jaipur, India",
-            mobile: "1234567890",
-            email: "example@s.com",
-            bio: "I am a dedicated working professional based in Jaipur, passionate about **technology, leadership, and personal finance**. I use this blog to share insights gained from over a decade in the industry, focusing on practical advice, market trends, and strategies for career growth. My goal is to synthesize complex ideas into clear, actionable advice.",
-            expertise: ["Strategic Planning", "Project Management", "Financial Modeling", "Technology Adoption", "Team Leadership"]
-        };
+      <!-- ADMIN BADGE -->
+      <div id="adminBadge" style="display:none; margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 15px; text-align:center;">
+        <span style="background:rgba(245,158,11,0.2); color:#d97706; padding:8px 16px; border-radius:20px; font-weight:700; font-size:0.9rem; border:1px solid rgba(245,158,11,0.4);">
+          👑 App Admin Account Active
+        </span>
+      </div>
 
-        const blogData = [
-            // Post 1 (Page 4)
-            { id: 1, title: "The 80/20 Rule for Career Growth", date: "Oct 25, 2025", category: "Productivity", slug: "80-20-career-growth",
-              summary: "Applying the Pareto Principle to focus on the 20% of efforts that yield 80% of career results.",
-              content: [
-                "The Pareto Principle, or the 80/20 rule, is not just for business; it's a powerful framework for career development. We often spread our time thinly across many tasks, but true growth comes from identifying and prioritizing the **high-leverage activities**.",
-                "In a professional context, this 20% might include mastering a critical technical skill, networking with key stakeholders, or leading a high-impact project. The 80% often includes routine meetings, low-priority emails, or tasks that can be delegated or automated.",
-                "**Actionable Takeaway:** Dedicate 2 hours each week to one high-leverage skill. Track its impact over a quarter. You'll be surprised how quickly you accelerate past colleagues focusing on sheer volume of work.",
-                "This principle demands ruthless prioritization. If an activity doesn't directly contribute to your major career objectives, it should be minimized or eliminated."
-            ]},
-            // Post 2 (Page 5)
-            { id: 2, title: "Demystifying Modern Cloud Architecture", date: "Oct 18, 2025", category: "Technology", slug: "modern-cloud-architecture",
-              summary: "A breakdown of serverless, microservices, and the future of scalable applications.",
-              content: [
-                "Cloud computing has moved beyond simple virtual machines. Today's modern applications rely on concepts like **microservices** and **serverless computing** to achieve unprecedented scalability and resilience.",
-                "Microservices break down large applications into smaller, independent services that communicate via APIs. This allows teams to iterate faster and deploy features without affecting the entire system. Think of it as replacing a large, monolithic house with many small, specialized workshops.",
-                "Serverless doesn't mean no servers; it means managing servers is abstracted away. Platforms like AWS Lambda or Azure Functions let you focus solely on the code. This is transformative for cost-efficiency and agility, especially for event-driven workloads.",
-                "The primary challenge lies in monitoring and managing distributed tracing across these complex architectures. Robust observability tools are now non-negotiable for any successful cloud deployment."
-            ]},
-            // Post 3 (Page 6)
-            { id: 3, title: "Financial Freedom: Building a 'Mochi' Portfolio", date: "Oct 10, 2025", category: "Finance", slug: "mochi-portfolio",
-              summary: "Introducing the 'Mochi' portfolio strategy: sticky, flexible, and resilient.",
-              content: [
-                "A 'Mochi' portfolio—named after the Japanese rice cake—is sticky (holds its value), flexible (can adapt to market conditions), and resilient (bounces back from volatility). It’s an approach designed for long-term growth and stability, ideal for a working professional.",
-                "This strategy typically advocates for a core allocation of **60% diversified, low-cost index funds**, 25% stable bonds or fixed-income assets, and a 15% 'growth' bucket for high-risk/high-reward investments like individual stocks or emerging markets.",
-                "The key is **automatic rebalancing**. When the 60% stock portion grows to 65% in a bull run, you sell the excess 5% and buy more bonds, enforcing discipline and selling high/buying low automatically. This takes the emotion out of investing.",
-                "For working professionals, consistency is king. Automate your monthly contributions and ignore the daily noise. Time in the market beats timing the market, always."
-            ]},
-            // Post 4 (Page 7)
-            { id: 4, title: "Leadership vs. Management: The Critical Difference", date: "Sep 28, 2025", category: "Leadership", slug: "leadership-vs-management",
-              summary: "Understanding the subtle but profound distinction between managing tasks and leading people.",
-              content: [
-                "While often used interchangeably, leadership and management are distinct disciplines. Management is about administering, maintaining, and controlling processes; leadership is about innovation, vision, and inspiring trust.",
-                "A manager organizes resources and ensures tasks are completed efficiently. A leader defines the future, articulates *why* the task matters, and motivates the team to overcome obstacles they didn't anticipate.",
-                "The transition from manager to leader is the most challenging pivot in a professional career. It requires shifting your focus from 'How was the task completed?' to 'What is the vision we are building?' and fostering autonomy in your team.",
-                "**Leading is listening.** True leaders spend less time giving instructions and more time understanding the challenges and aspirations of their team members. They create more leaders, not more followers."
-            ]},
-            // Post 5 (Page 8)
-            { id: 5, title: "Jaipur's Evolving Tech Ecosystem", date: "Sep 15, 2025", category: "Local Insight", slug: "jaipur-tech-ecosystem",
-              summary: "An overview of the rapid growth and future potential of the IT and startup scene in the Pink City.",
-              content: [
-                "Jaipur is quickly transitioning from a tourism hub to a burgeoning Tier-2 tech powerhouse. Driven by strong government support, affordable living, and a growing talent pool from local universities, the city is attracting significant investment.",
-                "The focus areas are emerging: EdTech, SaaS (Software as a Service), and e-commerce logistics. The supportive infrastructure, including co-working spaces and mentorship networks, is robust, creating a fertile ground for new ventures.",
-                "One key challenge remains: retaining senior talent who often migrate to metro cities. However, the quality of life and lower operational costs are increasingly balancing this equation, making it an attractive base for remote operations and smaller product companies.",
-                "I believe the next decade will cement Jaipur's role as a major contributor to India's digital economy, especially as remote work becomes the norm."
-            ]},
-            // Post 6 (Page 9)
-            { id: 6, title: "Mastering Asynchronous Communication", date: "Sep 1, 2025", category: "Productivity", slug: "asynchronous-communication",
-              summary: "Strategies for effective communication in a remote or hybrid work environment.",
-              content: [
-                "The shift to hybrid work demands a fundamental change in how we communicate. Relying less on instant response and more on thoughtful, detailed written communication is key to maximizing productivity.",
-                "**Asynchronous communication** means sending a message without the expectation of an immediate reply. Tools like Notion, Slack threads, and detailed project documents are central to this. It respects the recipient's focus time.",
-                "**Rules for Success:** 1. Write complete, standalone messages (don't send 'hi' and wait). 2. Define clear next steps and deadlines. 3. Summarize complex discussions with key decisions at the top. 4. Use video recordings (loom) for complicated explanations instead of long emails.",
-                "This approach reduces 'meeting fatigue,' allows global teams to collaborate efficiently across time zones, and encourages deep, focused work."
-            ]},
-            // Post 7 (Page 10)
-            { id: 7, title: "The Power of the Quarterly Review", date: "Aug 20, 2025", category: "Personal Development", slug: "quarterly-review-power",
-              summary: "Why a 90-day personal and professional review cycle beats annual planning.",
-              content: [
-                "Annual reviews are often too high-level and too far apart to drive real behavioral change. The **Quarterly Review (QR)** is the ideal cadence for a professional to assess progress, pivot strategies, and stay motivated.",
-                "A QR involves reviewing three key areas: **Health/Wellbeing**, **Career/Skills**, and **Finance/Investments**. The goal is not just to see *what* happened, but *why* it happened.",
-                "During the review, ask hard questions: 'Did I hit my learning goal?', 'Was my time allocation correct?', 'What is the single biggest bottleneck to my success right now?'. Be honest. If you are tracking the wrong metrics, change them.",
-                "The output of the QR should be 3-5 clear, measurable goals for the next 90 days. This short feedback loop ensures you are constantly course-correcting toward your long-term vision, making your progress exponential."
-            ]}
-        ];
+    </div>
+  </div>
+</div>
 
-        // --- Core Application Logic ---
+<!-- ===== DATE DETAIL MODAL ===== -->
+<div class="modal-overlay" id="dateModal">
+  <div class="modal-box glass-panel" style="position:relative;">
+    <div class="modal-header" id="dateModalHeader">
+      <button class="modal-close" onclick="closeDateModal()">✕</button>
+      <h2 id="dmTitle"></h2>
+      <div class="date-sub" id="dmSub"></div>
+      <div id="dmBadge" style="margin-top:6px;"></div>
+    </div>
+    <div class="modal-body">
+      <!-- Event Info -->
+      <div class="info-card glass-panel" id="dmEventCard" style="display:none;">
+        <h4>🎉 Holiday / Event</h4>
+        <div id="dmEventName" style="font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:4px;"></div>
+        <div id="dmEventDesc" style="font-size:0.85rem;color:var(--text-secondary);"></div>
+      </div>
 
-        const currentPage = { name: 'home', id: null };
+      <!-- Notes -->
+      <div class="info-card glass-panel">
+        <h4>📝 My Personal Note</h4>
+        <textarea class="notes-textarea" id="dmNotes" placeholder="Write a note for this day... (Saved to cloud)"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+          <button class="save-btn" onclick="saveNote()">💾 Save Note</button>
+          <span class="save-status" id="saveStatus">✅ Saved!</span>
+        </div>
+      </div>
 
-        /**
-         * Converts the current state to a readable content object.
-         * @param {string} pageName - The name of the page to render.
-         * @param {number | null} postId - The ID of the post to render (if pageName is 'post').
-         */
-        function navigate(pageName, postId = null) {
-            currentPage.name = pageName;
-            currentPage.id = postId;
-            render();
-            // Update URL hash for sharing/back button
-            if (pageName === 'post' && postId) {
-                const post = blogData.find(p => p.id === postId);
-                window.location.hash = `#post/${post.slug}`;
-            } else if (pageName !== 'home') {
-                 window.location.hash = `#${pageName}`;
-            } else {
-                 window.location.hash = `#home`;
-            }
-            window.scrollTo(0, 0); // Scroll to top on navigation
+      <!-- ADMIN EDITOR (Only visible if Admin logged in) -->
+      <div id="adminEditorPanel" class="admin-editor-panel" style="display:none;">
+        <h4 style="font-size:0.85rem; font-weight:800; color:#b45309; margin-bottom:10px;">👑 Admin Editor (Manage Holiday)</h4>
+        
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+          <label><input type="radio" name="holType" value="GH"> 🔴 GH</label>
+          <label><input type="radio" name="holType" value="RH"> 🔵 RH</label>
+          <label><input type="radio" name="holType" value="None"> Remove</label>
+        </div>
+
+        <input type="text" id="adminHolName" class="auth-input" style="padding:8px;" placeholder="Holiday Name">
+        <textarea id="adminHolDesc" class="auth-input" style="padding:8px; height:60px;" placeholder="Details/Description"></textarea>
+        
+        <button class="save-btn" style="background:linear-gradient(135deg,#f59e0b,#d97706); width:100%; justify-content:center;" onclick="saveAdminHoliday()">Update Holiday</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== HOLIDAY LIST MODAL ===== -->
+<div class="modal-overlay" id="holidayListModal">
+  <div class="modal-box glass-panel" style="position:relative;">
+    <div class="modal-header" id="holidayListHeader">
+      <button class="modal-close" onclick="closeHolidayListModal()">✕</button>
+      <h2 id="hlTitle"></h2>
+    </div>
+    <div class="modal-body">
+      <div class="holiday-timeline" id="hlList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// FIREBASE CONFIG (Realtime Data + Auth)
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBY0nqRGsqMMDFTENPoT3es5NQZpUTGRe0",
+  authDomain: "energy-meter-data-37caf.firebaseapp.com",
+  databaseURL: "https://energy-meter-data-37caf-default-rtdb.firebaseio.com",
+  projectId: "energy-meter-data-37caf",
+  storageBucket: "energy-meter-data-37caf.firebasestorage.app",
+  messagingSenderId: "525817374062",
+  appId: "1:525817374062:web:c815bdd169e60c1c98cd7f"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// ============================================================
+// STATE & ADMIN
+// ============================================================
+const TODAY = new Date();
+let currentYear = TODAY.getFullYear();
+let currentMonth = TODAY.getMonth(); // 0-indexed
+let currentDateStr = null; 
+let customHolidays = {}; // Realtime from Firestore
+let isRegisterMode = false;
+let notesUnsubscribe = null;
+
+// User Profile State
+let currentUserProfile = null; 
+
+// Global Admin Flag
+let isAdmin = false; 
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS_MON = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAYS_SUN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// ============================================================
+// HARDCODED 2026 HOLIDAYS (Fallback/Base)
+// ============================================================
+const BASE_HOLIDAYS = {
+  "2026-01-01": {type:"GH", name:"New Year's Day", desc:"Start of the Gregorian calendar year."},
+  "2026-01-26": {type:"GH", name:"Republic Day", desc:"India became a Republic on this day in 1950."},
+  "2026-03-03": {type:"GH", name:"Holi", desc:"Festival of colours heralding spring."},
+  "2026-08-15": {type:"GH", name:"Independence Day", desc:"India's independence from British rule in 1947."},
+  "2026-10-02": {type:"GH", name:"Gandhi Jayanti", desc:"Birth anniversary of Mahatma Gandhi."},
+  "2026-10-29": {type:"GH", name:"Diwali", desc:"Festival of Lights — Lakshmi Puja."},
+  "2026-12-25": {type:"GH", name:"Christmas Day", desc:"Birth of Jesus Christ."}
+};
+
+// ============================================================
+// AUTHENTICATION LOGIC (Splash Screen Integrated)
+// ============================================================
+auth.onAuthStateChanged(user => {
+  const splash = document.getElementById('splash-screen');
+  const authScreen = document.getElementById('auth-screen');
+  const appWrap = document.getElementById('app-wrapper');
+
+  if (user) {
+    isAdmin = (user.email === 'energymeter20@gmail.com');
+
+    if(user.emailVerified || isAdmin) { 
+      // User Valid -> Show App
+      splash.style.display = 'none';
+      authScreen.style.display = 'none';
+      appWrap.style.display = 'block';
+      
+      document.getElementById('userEmailDisplay').textContent = user.email;
+      initApp();
+    } else {
+      // Unverified -> Show Auth Screen
+      splash.style.display = 'none';
+      appWrap.style.display = 'none';
+      authScreen.style.display = 'flex';
+      
+      document.getElementById('auth-error').innerText = "Please click the Verification Link sent to your email, and then Login.";
+      auth.signOut();
+    }
+  } else {
+    // Logged Out -> Show Auth Screen
+    isAdmin = false;
+    splash.style.display = 'none';
+    appWrap.style.display = 'none';
+    authScreen.style.display = 'flex';
+  }
+});
+
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('auth-title').innerText = isRegisterMode ? "Create Account" : "Welcome Back";
+  document.getElementById('auth-subtitle').innerText = isRegisterMode ? "Fill in details to register" : "Please login to view calendar";
+  document.getElementById('auth-btn').innerText = isRegisterMode ? "Register" : "Login";
+  document.getElementById('auth-toggle-text').innerText = isRegisterMode ? "Already have an account?" : "Don't have an account?";
+  document.querySelector('#auth-toggle-text + a').innerText = isRegisterMode ? "Login" : "Create Account";
+  
+  // Toggle Visibility of extra fields
+  const regFields = document.querySelectorAll('.reg-fields');
+  regFields.forEach(el => el.style.display = isRegisterMode ? 'block' : 'none');
+  
+  document.getElementById('forgot-pass-wrap').style.display = isRegisterMode ? 'none' : 'block';
+
+  document.getElementById('auth-error').innerText = "";
+  document.getElementById('auth-success').innerText = "";
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errorDiv = document.getElementById('auth-error');
+  const successDiv = document.getElementById('auth-success');
+  
+  errorDiv.innerText = ""; successDiv.innerText = "";
+
+  if(!email || !password) {
+    errorDiv.innerText = "Please enter both Email and Password.";
+    return;
+  }
+
+  try {
+    errorDiv.innerText = "Please wait...";
+    if (isRegisterMode) {
+      // Validate additional fields
+      const fname = document.getElementById('auth-fname').value.trim();
+      const lname = document.getElementById('auth-lname').value.trim();
+      const gender = document.getElementById('auth-gender').value;
+      const mobile = document.getElementById('auth-mobile').value.trim();
+      const dob = document.getElementById('auth-dob').value;
+
+      if(!fname || !lname || !gender || !mobile || !dob) {
+         errorDiv.innerText = "All fields (Name, Gender, Mobile, DOB) are required for registration.";
+         return;
+      }
+
+      // REGISTER
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      await cred.user.sendEmailVerification();
+      errorDiv.innerText = "";
+      successDiv.innerText = "Account created! A Verification Link has been sent to your email. Please verify to Login.";
+      
+      // Save User Data
+      await db.collection('users').doc(cred.user.uid).set({
+        firstName: fname,
+        lastName: lname,
+        gender: gender,
+        mobile: mobile,
+        dob: dob,
+        photoBase64: "",
+        familyBirthdays: []
+      });
+
+      auth.signOut();
+    } else {
+      // LOGIN
+      const cred = await auth.signInWithEmailAndPassword(email, password);
+      if(!cred.user.emailVerified && cred.user.email !== 'energymeter20@gmail.com') {
+        await cred.user.sendEmailVerification();
+        errorDiv.innerText = "Your email is not verified yet. A new Link has been sent, please check.";
+        auth.signOut();
+      }
+    }
+  } catch(e) {
+    errorDiv.innerText = e.message;
+  }
+}
+
+async function forgotPassword() {
+  const email = document.getElementById('auth-email').value.trim();
+  const errorDiv = document.getElementById('auth-error');
+  const successDiv = document.getElementById('auth-success');
+  errorDiv.innerText = ""; successDiv.innerText = "";
+
+  if(!email) {
+    errorDiv.innerText = "Please enter your Email address first to reset password.";
+    return;
+  }
+  
+  try {
+    await auth.sendPasswordResetEmail(email);
+    successDiv.innerText = "Password Reset link sent to your email. Please check.";
+  } catch (e) {
+    errorDiv.innerText = e.message;
+  }
+}
+
+function logout() {
+  auth.signOut();
+  closeSidebar();
+}
+
+// ============================================================
+// PROFILE & BIRTHDAY MANAGEMENT
+// ============================================================
+async function loadUserProfile() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  document.getElementById('profileEmailInput').value = user.email;
+  
+  try {
+    const doc = await db.collection('users').doc(user.uid).get();
+    if(doc.exists) {
+      currentUserProfile = doc.data();
+      const fname = currentUserProfile.firstName || user.email.split('@')[0];
+      const lname = currentUserProfile.lastName || '';
+      const photo = currentUserProfile.photoBase64 || `https://ui-avatars.com/api/?name=${fname}+${lname}&background=7c3aed&color=fff`;
+      
+      document.getElementById('profileFnameInput').value = fname;
+      document.getElementById('profileLnameInput').value = lname;
+      if(currentUserProfile.dob) document.getElementById('profileDobInput').value = currentUserProfile.dob;
+
+      document.getElementById('sidebarProfileName').innerText = fname + ' ' + lname;
+      document.getElementById('sidebarProfilePic').src = photo;
+      document.getElementById('modalProfilePic').src = photo;
+
+      renderFamilyBirthdaysUI();
+      checkBirthdayToday(); // Check if today is user's bday
+    }
+  } catch(e) { console.error("Profile load error", e); }
+}
+
+function checkBirthdayToday() {
+  if (!currentUserProfile || !currentUserProfile.dob) return;
+  if (sessionStorage.getItem('bday_wished_today') === 'true') return;
+
+  const today = new Date();
+  const todayMMDD = String(today.getMonth() + 1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  
+  const userMMDD = currentUserProfile.dob.substring(5); 
+
+  if (todayMMDD === userMMDD) {
+    document.getElementById('bday-msg').innerText = `Happy Birthday, ${currentUserProfile.firstName}!`;
+    document.getElementById('bday-overlay').classList.add('open');
+    fireConfetti();
+    setTimeout(fireConfetti, 1000);
+    setTimeout(fireConfetti, 2500);
+    sessionStorage.setItem('bday_wished_today', 'true');
+  }
+}
+
+function closeBirthdayOverlay() {
+  document.getElementById('bday-overlay').classList.remove('open');
+}
+
+function openProfileModal() {
+  document.getElementById('adminBadge').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('profileModal').classList.add('open');
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('open');
+}
+
+function uploadProfilePic(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('modalProfilePic').src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfileData() {
+  const user = auth.currentUser;
+  if(!user) return;
+
+  const fname = document.getElementById('profileFnameInput').value.trim();
+  const lname = document.getElementById('profileLnameInput').value.trim();
+  const dob = document.getElementById('profileDobInput').value;
+  const newPhoto = document.getElementById('modalProfilePic').src;
+
+  try {
+    await db.collection('users').doc(user.uid).set({
+      firstName: fname,
+      lastName: lname,
+      dob: dob,
+      photoBase64: newPhoto
+    }, { merge: true });
+
+    currentUserProfile.firstName = fname;
+    currentUserProfile.lastName = lname;
+    currentUserProfile.dob = dob;
+    currentUserProfile.photoBase64 = newPhoto;
+
+    document.getElementById('sidebarProfileName').innerText = fname + ' ' + lname;
+    document.getElementById('sidebarProfilePic').src = newPhoto;
+    
+    renderCalendar(); 
+    
+    const s = document.getElementById('profileSaveStatus');
+    s.classList.add('visible');
+    setTimeout(() => s.classList.remove('visible'), 2500);
+  } catch (e) {
+    alert("Error saving profile: " + e.message);
+  }
+}
+
+// FAMILY BIRTHDAYS
+async function addFamilyBirthday() {
+  const name = document.getElementById('fbName').value.trim();
+  const dob = document.getElementById('fbDob').value;
+  if(!name || !dob) { alert("Please enter both Name and DOB."); return; }
+
+  const user = auth.currentUser;
+  if(!user) return;
+
+  const newBday = { id: Date.now().toString(), name, dob };
+  let arr = currentUserProfile.familyBirthdays || [];
+  arr.push(newBday);
+
+  try {
+    await db.collection('users').doc(user.uid).set({ familyBirthdays: arr }, { merge: true });
+    currentUserProfile.familyBirthdays = arr;
+    document.getElementById('fbName').value = '';
+    document.getElementById('fbDob').value = '';
+    renderFamilyBirthdaysUI();
+    renderCalendar(); 
+  } catch(e) { alert("Error adding birthday: " + e.message); }
+}
+
+async function removeFamilyBirthday(id) {
+  const user = auth.currentUser;
+  if(!user) return;
+
+  let arr = currentUserProfile.familyBirthdays || [];
+  arr = arr.filter(b => b.id !== id);
+
+  try {
+    await db.collection('users').doc(user.uid).set({ familyBirthdays: arr }, { merge: true });
+    currentUserProfile.familyBirthdays = arr;
+    renderFamilyBirthdaysUI();
+    renderCalendar(); 
+  } catch(e) { alert("Error removing birthday: " + e.message); }
+}
+
+function renderFamilyBirthdaysUI() {
+  const list = document.getElementById('familyBdaysList');
+  let arr = currentUserProfile?.familyBirthdays || [];
+  
+  if (arr.length === 0) {
+    list.innerHTML = `<div style="text-align:center; font-size:0.8rem; color:var(--text-secondary);">No birthdays added yet.</div>`;
+    return;
+  }
+
+  let html = '';
+  arr.forEach(b => {
+    const d = new Date(b.dob);
+    const dateStr = d.toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+    html += `
+      <div class="f-bday-item">
+        <div>
+          <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary);">🎈 ${b.name}</div>
+          <div style="font-size:0.7rem; color:var(--text-secondary);">${dateStr}</div>
+        </div>
+        <button onclick="removeFamilyBirthday('${b.id}')" style="background:rgba(239,68,68,0.1); color:#ef4444; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem;">Remove</button>
+      </div>
+    `;
+  });
+  list.innerHTML = html;
+}
+
+
+// ============================================================
+// ADMIN LOGIC (App Owner Access)
+// ============================================================
+async function saveAdminHoliday() {
+  if(!isAdmin) return; 
+  
+  const typeEle = document.querySelector('input[name="holType"]:checked');
+  const type = typeEle ? typeEle.value : 'None';
+  const name = document.getElementById('adminHolName').value.trim();
+  const desc = document.getElementById('adminHolDesc').value.trim();
+
+  try {
+    if (type === 'None') {
+      await db.collection('custom_holidays').doc(currentDateStr).delete();
+    } else {
+      if(!name) { alert("Holiday name is required."); return; }
+      await db.collection('custom_holidays').doc(currentDateStr).set({ type, name, desc });
+    }
+    closeDateModal();
+  } catch (e) {
+    alert("Holiday save error: " + e.message);
+  }
+}
+
+// ============================================================
+// REALTIME DATA FETCHING & APP INIT
+// ============================================================
+function initApp() {
+  loadSettings();
+  populateSelects();
+  loadUserProfile(); 
+  
+  db.collection('custom_holidays').onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added" || change.type === "modified") {
+        customHolidays[change.doc.id] = change.doc.data();
+      }
+      if (change.type === "removed") {
+        delete customHolidays[change.doc.id];
+      }
+    });
+    renderCalendar();
+  }, err => console.error("Error fetching holidays:", err));
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function getSetting(key, def) {
+  const v = localStorage.getItem('cal_'+key);
+  return v === null ? def : (v === 'true' ? true : (v === 'false' ? false : v));
+}
+function saveSetting(key, val) { localStorage.setItem('cal_'+key, val); }
+
+function loadSettings() {
+  setTheme(getSetting('theme','system'), true);
+  setWeekStart(getSetting('weekStart','sun'), true);
+  document.getElementById('toggleAnimations').checked = getSetting('animations',true);
+  document.getElementById('toggleWeekend').checked = getSetting('weekend',true);
+}
+
+function setTheme(t, silent) {
+  if (!silent) saveSetting('theme', t);
+  const html = document.documentElement;
+  if (t === 'dark') html.classList.add('dark');
+  else if (t === 'light') html.classList.remove('dark');
+  else {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) html.classList.add('dark');
+    else html.classList.remove('dark');
+  }
+  document.getElementById('darkToggleBtn').textContent = html.classList.contains('dark') ? '🔆' : '🌙';
+  document.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+}
+function cycleDarkMode() {
+  const cur = getSetting('theme','system');
+  const order = ['system','light','dark'];
+  setTheme(order[(order.indexOf(cur)+1)%3]);
+}
+function setWeekStart(t, silent) {
+  if (!silent) { saveSetting('weekStart', t); renderCalendar(); }
+  document.querySelectorAll('[data-ws]').forEach(b => b.classList.toggle('active', b.dataset.ws === t));
+}
+
+// ============================================================
+// CALENDAR RENDER
+// ============================================================
+function populateSelects() {
+  document.getElementById('monthSelect').innerHTML = MONTHS.map((m,i) => `<option value="${i}" ${i===currentMonth?'selected':''}>${m}</option>`).join('');
+  let yOpts = '';
+  for (let y = 2020; y <= 2035; y++) yOpts += `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`;
+  document.getElementById('yearSelect').innerHTML = yOpts;
+}
+
+function onMonthYearChange() {
+  currentMonth = parseInt(document.getElementById('monthSelect').value);
+  currentYear = parseInt(document.getElementById('yearSelect').value);
+  renderCalendar();
+}
+
+function getHolidayData(dateStr) {
+  return customHolidays[dateStr] || BASE_HOLIDAYS[dateStr] || null;
+}
+
+function isWeekend(date) {
+  const d = date.getDay();
+  return d === 0 || d === 6;
+}
+
+function renderCalendar() {
+  const weekStart = getSetting('weekStart','sun');
+  document.getElementById('dayHeaders').innerHTML = (weekStart === 'mon' ? DAYS_MON : DAYS_SUN).map((d,i) => {
+    const isWknd = (weekStart==='sun' ? (i===0||i===6) : (i===5||i===6));
+    return `<div class="day-header${isWknd?' weekend-header':''}">${d}</div>`;
+  }).join('');
+
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay(); 
+  let offset = weekStart === 'mon' ? (firstDay === 0 ? 6 : firstDay - 1) : firstDay;
+
+  let html = '';
+  for (let i = 0; i < offset; i++) html += `<div class="cal-cell empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(currentYear, currentMonth, d);
+    const dateStr = formatDateStr(currentYear, currentMonth+1, d);
+    const hd = getHolidayData(dateStr);
+    const isToday = date.toDateString() === TODAY.toDateString();
+    const wknd = isWeekend(date);
+
+    // Birthday Logic
+    let isBday = false;
+    let bdayNameStr = "";
+    const renderMMDD = dateStr.substring(5); 
+    
+    if (currentUserProfile) {
+        if (currentUserProfile.dob && currentUserProfile.dob.endsWith(renderMMDD)) {
+            isBday = true;
+            bdayNameStr += `<div>🎂 My B'day</div>`;
         }
-
-        /**
-         * Main render function: decides which page to display.
-         */
-        function render() {
-            let htmlContent = '';
-
-            switch (currentPage.name) {
-                case 'home':
-                    htmlContent = renderHome();
-                    break;
-                case 'about':
-                    htmlContent = renderAbout();
-                    break;
-                case 'contact':
-                    htmlContent = renderContact();
-                    break;
-                case 'post':
-                    htmlContent = renderPost(currentPage.id);
-                    break;
-                default:
-                    // Fallback to home page
-                    currentPage.name = 'home';
-                    htmlContent = renderHome();
-            }
-            
-            // Fade in content
-            app.innerHTML = `<div class="page-content">${htmlContent}</div>`;
-            setTimeout(() => {
-                const contentDiv = app.querySelector('.page-content');
-                if(contentDiv) contentDiv.classList.add('active');
-            }, 10);
-        }
-
-        // --- Page Render Functions ---
-
-        /**
-         * Renders the Home/Blog Listing page (Page 1)
-         */
-        function renderHome() {
-            return `
-                <section class="text-center py-12 bg-white rounded-xl shadow-lg mb-8">
-                    <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl lg:text-6xl mb-4">
-                        Insights from a <span class="text-accent-blue">Working Professional</span>
-                    </h1>
-                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                        Deep dives into Tech, Finance, Leadership, and Productivity.
-                    </p>
-                </section>
-
-                <section class="py-10">
-                    <h2 class="text-3xl font-bold text-gray-900 border-b-2 border-accent-teal pb-2 mb-8">Latest Articles</h2>
-                    <div class="grid gap-8 lg:grid-cols-3 md:grid-cols-2">
-                        ${blogData.map(post => `
-                            <article class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transform hover:scale-[1.02] transition duration-300 border-t-4 border-accent-blue">
-                                <span class="text-xs font-semibold uppercase tracking-wider text-accent-teal">${post.category}</span>
-                                <h3 class="mt-2 text-xl font-bold text-gray-900 leading-snug">
-                                    <a href="#post/${post.slug}" onclick="navigate('post', ${post.id})" class="hover:text-accent-blue transition duration-300">
-                                        ${post.title}
-                                    </a>
-                                </h3>
-                                <p class="mt-4 text-gray-600 text-sm">${post.summary}</p>
-                                <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
-                                    <span>${post.date}</span>
-                                    <button onclick="navigate('post', ${post.id})" class="text-accent-blue hover:text-accent-teal font-semibold flex items-center">
-                                        Read Article
-                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                                    </button>
-                                </div>
-                            </article>
-                        `).join('')}
-                    </div>
-                </section>
-            `;
-        }
-
-        /**
-         * Renders the About Me page (Page 2)
-         */
-        function renderAbout() {
-            return `
-                <div class="bg-white p-8 md:p-12 rounded-xl shadow-2xl">
-                    <header class="text-center mb-8">
-                        <div class="w-24 h-24 mx-auto bg-accent-blue rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4">
-                            NA
-                        </div>
-                        <h1 class="text-4xl font-extrabold text-gray-900">${navinDetails.name}</h1>
-                        <p class="text-xl text-accent-blue font-semibold mt-1">${navinDetails.role} | ${navinDetails.location}</p>
-                    </header>
-
-                    <section class="mt-8 border-t border-gray-200 pt-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">My Journey & Philosophy</h2>
-                        <p class="text-lg text-gray-700 leading-relaxed">${navinDetails.bio}</p>
-                    </section>
-
-                    <section class="mt-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Core Expertise</h2>
-                        <div class="flex flex-wrap gap-4">
-                            ${navinDetails.expertise.map(skill => `
-                                <span class="bg-accent-teal/10 text-accent-teal font-medium px-4 py-2 rounded-full text-sm shadow-sm">
-                                    ${skill}
-                                </span>
-                            `).join('')}
-                        </div>
-                    </section>
-
-                    <section class="mt-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Connect</h2>
-                        <div class="flex flex-col space-y-3">
-                            <p class="flex items-center text-gray-700">
-                                <svg class="w-5 h-5 mr-3 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                Email: <a href="mailto:${navinDetails.email}" class="ml-2 text-accent-teal hover:underline">${navinDetails.email}</a>
-                            </p>
-                            <p class="flex items-center text-gray-700">
-                                <svg class="w-5 h-5 mr-3 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                Mobile: <span class="ml-2 text-gray-700">${navinDetails.mobile}</span>
-                            </p>
-                        </div>
-                    </section>
-                </div>
-            `;
-        }
-
-        /**
-         * Renders the Contact page (Page 3)
-         */
-        function renderContact() {
-            return `
-                <div class="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-xl shadow-2xl border-t-8 border-accent-teal">
-                    <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">Get In Touch</h1>
-                    <p class="text-center text-gray-600 mb-8">
-                        I'm always open to discussing industry trends, collaboration opportunities, or general professional inquiries.
-                    </p>
-
-                    <div class="grid md:grid-cols-2 gap-10">
-                        <!-- Contact Details -->
-                        <div>
-                            <h2 class="text-xl font-semibold text-accent-blue mb-4">Direct Details</h2>
-                            <div class="space-y-4">
-                                <div class="flex items-center">
-                                    <svg class="w-6 h-6 mr-3 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                    <div>
-                                        <p class="font-medium">Location</p>
-                                        <p class="text-gray-600">${navinDetails.location}</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <svg class="w-6 h-6 mr-3 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                    <div>
-                                        <p class="font-medium">Email</p>
-                                        <p class="text-gray-600"><a href="mailto:${navinDetails.email}" class="hover:underline">${navinDetails.email}</a></p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <svg class="w-6 h-6 mr-3 text-accent-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                    <div>
-                                        <p class="font-medium">Mobile</p>
-                                        <p class="text-gray-600">${navinDetails.mobile}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Contact Form (Mock) -->
-                        <div>
-                            <h2 class="text-xl font-semibold text-accent-blue mb-4">Send a Message</h2>
-                            <form id="contact-form" onsubmit="handleFormSubmit(event)">
-                                <div class="mb-4">
-                                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                                    <input type="text" id="name" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-blue focus:ring-accent-blue p-2 border" required>
-                                </div>
-                                <div class="mb-4">
-                                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                    <input type="email" id="email" name="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-blue focus:ring-accent-blue p-2 border" required>
-                                </div>
-                                <div class="mb-6">
-                                    <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
-                                    <textarea id="message" name="message" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-blue focus:ring-accent-blue p-2 border" required></textarea>
-                                </div>
-                                <button type="submit" class="w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-accent-blue hover:bg-accent-teal transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-blue">
-                                    Send Message
-                                </button>
-                                <div id="form-message" class="mt-4 text-center text-sm font-medium hidden p-2 rounded-lg bg-green-100 text-green-700"></div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        /**
-         * Renders a detailed Blog Post (Pages 4 through 10)
-         * @param {number} id - The ID of the post.
-         */
-        function renderPost(id) {
-            const post = blogData.find(p => p.id === id);
-            if (!post) {
-                return `<div class="text-center py-20"><h1 class="text-3xl font-bold text-red-600">Post Not Found</h1><p class="mt-4 text-gray-600">The requested article could not be loaded.</p><button onclick="navigate('home')" class="mt-6 text-accent-blue hover:text-accent-teal font-semibold">Go back to Home</button></div>`;
-            }
-
-            return `
-                <article class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
-                    <span class="text-sm font-semibold uppercase tracking-wider text-accent-teal">${post.category}</span>
-                    <h1 class="mt-2 text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">${post.title}</h1>
-                    <div class="flex items-center text-gray-500 text-sm mt-3 border-b pb-4 mb-8">
-                        <span class="mr-4">By Navin Arya</span>
-                        <span>Published: ${post.date}</span>
-                    </div>
-
-                    <div class="prose max-w-none text-lg text-gray-700 space-y-6">
-                        ${post.content.map(paragraph => `<p>${paragraph}</p>`).join('')}
-                    </div>
-
-                    <div class="mt-10 pt-6 border-t border-gray-200">
-                         <button onclick="navigate('home')" class="py-2 px-4 border border-accent-blue rounded-lg text-accent-blue hover:bg-accent-blue hover:text-white transition duration-300 font-medium">
-                            ← Back to all articles
-                        </button>
-                    </div>
-                </article>
-            `;
-        }
-
-
-        // --- Event Handlers and Initialization ---
-
-        /**
-         * Handles the mock contact form submission.
-         */
-        function handleFormSubmit(event) {
-            event.preventDefault();
-            const formMessage = document.getElementById('form-message');
-            formMessage.classList.remove('hidden', 'bg-red-100', 'text-red-700');
-            formMessage.classList.add('bg-green-100', 'text-green-700');
-            formMessage.textContent = 'Message sent successfully! Navin will get back to you shortly.';
-            formMessage.classList.remove('hidden');
-
-            // Clear form (Mock success)
-            document.getElementById('contact-form').reset();
-            
-            // Hide message after 5 seconds
-            setTimeout(() => {
-                formMessage.classList.add('hidden');
-            }, 5000);
-        }
-
-        /**
-         * Toggles the visibility of the mobile menu.
-         */
-        function toggleMobileMenu() {
-            mobileMenu.classList.toggle('hidden');
-        }
-
-        /**
-         * Initializes the application based on the URL hash.
-         */
-        function initializeApp() {
-            document.getElementById('current-year').textContent = new Date().getFullYear();
-
-            // Setup mobile menu toggle
-            mobileMenuButton.addEventListener('click', toggleMobileMenu);
-
-            // Handle hash changes (browser back/forward buttons)
-            window.addEventListener('hashchange', handleHashChange);
-
-            // Initial load
-            handleHashChange();
-        }
-
-        /**
-         * Parses the URL hash to determine the current page.
-         */
-        function handleHashChange() {
-            let hash = window.location.hash.slice(1);
-            if (!hash || hash === 'home') {
-                navigate('home');
-            } else if (hash.startsWith('post/')) {
-                // Handle deep links like #post/80-20-career-growth
-                const slug = hash.split('/')[1];
-                const post = blogData.find(p => p.slug === slug);
-                if (post) {
-                    navigate('post', post.id);
-                } else {
-                    navigate('home'); // Fallback
+        if (currentUserProfile.familyBirthdays) {
+            currentUserProfile.familyBirthdays.forEach(fb => {
+                if (fb.dob && fb.dob.endsWith(renderMMDD)) {
+                    isBday = true;
+                    bdayNameStr += `<div>🎈 ${fb.name}</div>`;
                 }
-            } else if (['about', 'contact'].includes(hash)) {
-                navigate(hash);
-            } else {
-                 navigate('home'); // Default to home if hash is invalid
-            }
+            });
         }
+    }
 
+    let cls = 'cal-cell ';
+    if (isToday) cls += 'today-cell ';
+    else if (isBday) cls += 'bday-cell '; 
+    else if (hd?.type === 'GH') cls += 'gh-cell ';
+    else if (hd?.type === 'RH') cls += 'rh-cell ';
+    else cls += 'regular ';
+    if (wknd && getSetting('weekend',true) && !isToday) cls += 'weekend ';
 
-        // Start the application
-        initializeApp();
+    let specialDotsHtml = '';
+    if(hd?.type === 'GH') specialDotsHtml += `<div class="special-dot" style="background:#ef4444;color:#ef4444;"></div>`;
+    if(hd?.type === 'RH') specialDotsHtml += `<div class="special-dot" style="background:#3b82f6;color:#3b82f6;"></div>`;
 
-    </script>
+    let nameHtml = '';
+    if (bdayNameStr) {
+      nameHtml += `<div class="holiday-name">${bdayNameStr}</div>`;
+    }
+    if (hd) {
+       nameHtml += `<div class="holiday-name" style="${isBday ? 'margin-top:2px; font-size:0.55rem; color:var(--text-secondary); font-weight:600;' : ''}">${hd.name}</div>`;
+    }
+
+    html += `<div class="${cls.trim()}" onclick="openDateModal('${dateStr}')">
+      <div class="day-num">${d}</div>
+      ${nameHtml}
+      ${specialDotsHtml}
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+  populateSelects();
+}
+
+function formatDateStr(y, m, d) {
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+// ============================================================
+// TOUCH SWIPE NAVIGATION (Optimized)
+// ============================================================
+function jumpToDateAndOpen(dateStr) {
+  closeHolidayListModal();
+  const [y, m, d] = dateStr.split('-').map(Number);
+  currentYear = y;
+  currentMonth = m - 1;
+  renderCalendar(); 
+  openDateModal(dateStr); 
+}
+
+function changeMonth(dir) {
+  const wrapper = document.getElementById('calWrapper');
+  if (getSetting('animations',true)) {
+    wrapper.style.transition = 'transform 0.15s ease-out, opacity 0.15s';
+    wrapper.style.transform = `translateX(${dir > 0 ? '-40px' : '40px'})`;
+    wrapper.style.opacity = '0';
+    
+    setTimeout(() => {
+      currentMonth += dir;
+      if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+      if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+      renderCalendar();
+      
+      wrapper.style.transition = 'none';
+      wrapper.style.transform = `translateX(${dir > 0 ? '40px' : '-40px'})`;
+      void wrapper.offsetWidth; // force reflow
+      
+      wrapper.style.transition = 'transform 0.2s ease-out, opacity 0.2s';
+      wrapper.style.transform = 'translateX(0)';
+      wrapper.style.opacity = '1';
+    }, 150);
+  } else {
+    currentMonth += dir;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  }
+}
+
+function jumpToToday() {
+  currentMonth = TODAY.getMonth();
+  currentYear = TODAY.getFullYear();
+  renderCalendar();
+}
+
+// Robust Swipe Logic
+let touchStartX = 0;
+let touchStartY = 0;
+const calGrid = document.getElementById('calWrapper');
+
+calGrid.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, {passive: true});
+
+calGrid.addEventListener('touchend', e => {
+  const touchEndX = e.changedTouches[0].screenX;
+  const touchEndY = e.changedTouches[0].screenY;
+  
+  const dx = touchEndX - touchStartX;
+  const dy = touchEndY - touchStartY;
+  
+  // If horizontal swipe is larger than vertical scroll and distance is enough
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+    changeMonth(dx < 0 ? 1 : -1);
+  }
+}, {passive: true});
+
+// ============================================================
+// DATE MODAL & PERSONAL NOTES (Firebase)
+// ============================================================
+async function openDateModal(dateStr) {
+  currentDateStr = dateStr;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m-1, d);
+  const hd = getHolidayData(dateStr);
+  const wknd = isWeekend(date);
+  const isToday = date.toDateString() === TODAY.toDateString();
+
+  let grad = 'linear-gradient(135deg,#64748b,#475569)';
+  if (hd?.type === 'GH') grad = 'linear-gradient(135deg,#dc2626,#9f1239)';
+  else if (hd?.type === 'RH') grad = 'linear-gradient(135deg,#2563eb,#1d4ed8)';
+  else if (wknd) grad = 'linear-gradient(135deg,#ea580c,#c2410c)';
+  else if (isToday) grad = 'linear-gradient(135deg,#16a34a,#15803d)';
+
+  let isBday = false;
+  const renderMMDD = dateStr.substring(5);
+  if (currentUserProfile) {
+      if (currentUserProfile.dob && currentUserProfile.dob.endsWith(renderMMDD)) isBday = true;
+      if (currentUserProfile.familyBirthdays) {
+          currentUserProfile.familyBirthdays.forEach(fb => {
+              if (fb.dob && fb.dob.endsWith(renderMMDD)) isBday = true;
+          });
+      }
+  }
+
+  if (isBday) grad = 'linear-gradient(135deg, #ec4899, #f59e0b)';
+
+  document.getElementById('dateModalHeader').style.background = grad;
+  document.getElementById('dmTitle').textContent = new Intl.DateTimeFormat('en-IN',{weekday:'long',day:'numeric'}).format(date);
+  document.getElementById('dmSub').textContent = new Intl.DateTimeFormat('en-IN',{month:'long',year:'numeric'}).format(date);
+
+  let badge = '';
+  if (isToday) badge = `<span style="background:rgba(255,255,255,0.25);padding:2px 10px;border-radius:10px;font-size:0.72rem;font-weight:600;color:#fff;">📍 Today</span>`;
+  if (hd?.type) badge += ` <span style="background:rgba(255,255,255,0.25);padding:2px 10px;border-radius:10px;font-size:0.72rem;font-weight:600;color:#fff;">${hd.type}</span>`;
+  if (isBday) badge += ` <span style="background:rgba(255,255,255,0.25);padding:2px 10px;border-radius:10px;font-size:0.72rem;font-weight:600;color:#fff;">🎂 Birthday</span>`;
+  document.getElementById('dmBadge').innerHTML = badge;
+
+  const ec = document.getElementById('dmEventCard');
+  if (hd) {
+    document.getElementById('dmEventName').textContent = hd.name;
+    document.getElementById('dmEventDesc').textContent = hd.desc || '';
+    ec.style.display = '';
+  } else {
+    ec.style.display = 'none';
+  }
+
+  // Admin Setup
+  if (isAdmin) {
+    document.getElementById('adminEditorPanel').style.display = 'block';
+    document.getElementById('adminHolName').value = hd ? hd.name : '';
+    document.getElementById('adminHolDesc').value = hd && hd.desc ? hd.desc : '';
+    const radios = document.getElementsByName('holType');
+    radios.forEach(r => r.checked = false);
+    if(hd) {
+      document.querySelector(`input[name="holType"][value="${hd.type}"]`).checked = true;
+    } else {
+      document.querySelector('input[name="holType"][value="None"]').checked = true;
+    }
+  } else {
+    document.getElementById('adminEditorPanel').style.display = 'none';
+  }
+
+  // User Notes Setup
+  document.getElementById('dmNotes').value = '';
+  document.getElementById('saveStatus').classList.remove('visible');
+  
+  if(notesUnsubscribe) notesUnsubscribe(); 
+  
+  const user = auth.currentUser;
+  if (user) {
+    notesUnsubscribe = db.collection('users').doc(user.uid).collection('calendar_notes').doc(dateStr)
+      .onSnapshot(doc => {
+        if(doc.exists && document.getElementById('dateModal').classList.contains('open')) {
+          document.getElementById('dmNotes').value = doc.data().note || '';
+        }
+      });
+  }
+  
+  document.getElementById('dateModal').classList.add('open');
+}
+
+function closeDateModal() { 
+  document.getElementById('dateModal').classList.remove('open'); 
+  if(notesUnsubscribe) { notesUnsubscribe(); notesUnsubscribe = null; }
+}
+
+async function saveNote() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const note = document.getElementById('dmNotes').value;
+  try {
+    await db.collection('users').doc(user.uid).collection('calendar_notes').doc(currentDateStr).set({
+      note, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge: true});
+    
+    const s = document.getElementById('saveStatus');
+    s.classList.add('visible');
+    setTimeout(() => s.classList.remove('visible'), 2500);
+  } catch(e) { alert('Note save error: '+e.message); }
+}
+
+// ============================================================
+// HOLIDAY LIST MODAL
+// ============================================================
+function openGHModal() { openHolidayList('GH'); }
+function openRHModal() { openHolidayList('RH'); }
+
+function openHolidayList(type) {
+  const color = type === 'GH' ? '#dc2626' : '#2563eb';
+  const grad = type === 'GH' ? 'linear-gradient(135deg,#dc2626,#9f1239)' : 'linear-gradient(135deg,#2563eb,#1d4ed8)';
+  document.getElementById('holidayListHeader').style.background = grad;
+  document.getElementById('hlTitle').textContent = type === 'GH' ? `🔴 Gazetted Holidays (${currentYear})` : `🔵 Restricted Holidays (${currentYear})`;
+
+  const allHolidays = {...BASE_HOLIDAYS, ...customHolidays};
+  const filtered = Object.entries(allHolidays)
+    .filter(([dateStr, v]) => v?.type === type && dateStr.startsWith(currentYear.toString()))
+    .sort(([a],[b]) => a.localeCompare(b));
+
+  const byMonth = {};
+  filtered.forEach(([dateStr, hd]) => {
+    const m = parseInt(dateStr.split('-')[1]) - 1;
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push({dateStr, hd});
+  });
+
+  let html = '';
+  Object.entries(byMonth).forEach(([m, items]) => {
+    html += `<div class="month-group"><div class="month-label">${MONTHS[m]} ${currentYear}</div>`;
+    items.forEach(({dateStr, hd}) => {
+      const d = parseInt(dateStr.split('-')[2]);
+      const date = new Date(dateStr+'T00:00:00');
+      const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][date.getDay()];
+      html += `<div class="holiday-item" onclick="jumpToDateAndOpen('${dateStr}')" title="Tap to view in calendar">
+        <div class="h-date-badge" style="background:${type==='GH'?'rgba(239,68,68,0.12)':'rgba(59,130,246,0.12)'};color:${color};">${d}<br/><span style="font-size:0.65rem;font-weight:600;opacity:0.8;color:inherit;">${wd}</span></div>
+        <div>
+          <div class="h-name">${hd.name}</div>
+          ${hd.desc ? `<div class="h-desc">${hd.desc}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  if(Object.keys(byMonth).length === 0) {
+      html = `<div style="text-align:center; padding: 20px; color:var(--text-secondary); font-weight:600;">No ${type === 'GH' ? 'Gazetted' : 'Restricted'} holidays found for ${currentYear}.</div>`;
+  }
+
+  document.getElementById('hlList').innerHTML = html;
+  document.getElementById('holidayListModal').classList.add('open');
+}
+function closeHolidayListModal() { document.getElementById('holidayListModal').classList.remove('open'); }
+
+// ============================================================
+// SIDEBAR & UTILS
+// ============================================================
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+function fireConfetti() {
+  if (typeof confetti !== 'undefined') {
+    confetti({particleCount:120,spread:80,origin:{y:0.6},colors:['#ff6eb4','#6ec6ff','#fb923c','#22c55e','#fbbf24']});
+  }
+}
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (getSetting('theme','system') === 'system') setTheme('system');
+});
+</script>
 </body>
 </html>
+
+
+```
